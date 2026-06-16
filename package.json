@@ -25,6 +25,7 @@
         "prepare:node": "node scripts/download-node.mjs",
         "prepare:python": "node scripts/download-python.mjs",
         "prepare:searxng-python": "node scripts/prepare-searxng-python.mjs",
+        "vendor:searxng": "node scripts/vendor-searxng.mjs",
         "prepare:searxng-image": "bash scripts/bundle-searxng-image.sh",
         "prepare:release": "npm run prepare:bundle && npm run prepare:node && npm run prepare:python && npm run prepare:searxng-python",
         "prepare:release:full": "npm run prepare:release",
