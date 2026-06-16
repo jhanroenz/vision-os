@@ -3,7 +3,7 @@
  * Refresh vendor/searxng-src from upstream (run on Linux/macOS).
  * Excludes deployment templates with ':' in filenames (invalid on Windows NTFS).
  */
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -48,6 +48,12 @@ function main() {
   rmSync(vendorDir, { recursive: true, force: true });
   cpSync(temp, vendorDir, { recursive: true });
   rmSync(join(vendorDir, '.git'), { recursive: true, force: true });
+
+  // httpd is sparse-excluded (NTFS-invalid ':' filenames); drop dangling apache2 symlink.
+  const apache2Link = join(vendorDir, 'utils/templates/etc/apache2');
+  if (existsSync(apache2Link) && lstatSync(apache2Link).isSymbolicLink()) {
+    rmSync(apache2Link);
+  }
 
   writeFileSync(
     join(vendorDir, 'VENDOR_REVISION'),
