@@ -19,7 +19,8 @@
         "tauri": "tauri",
         "tauri:dev": "searxng/tauri-dev.sh",
         "tauri:dev:raw": "GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 WINIT_UNIX_BACKEND=x11 tauri dev",
-        "tauri:build": "tauri build"
+        "tauri:build": "tauri build",
+        "icons": "tauri icon src-tauri/app-icon.svg -o src-tauri/icons && cp src-tauri/icons/icon.ico static/favicon.ico"
     },
     "devDependencies": {
         "@sveltejs/adapter-node": "^5.5.4",

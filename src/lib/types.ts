@@ -37,7 +37,7 @@ export interface OsSettings {
 export const DEFAULT_SETTINGS: OsSettings = {
   accent: '#6c5ce7',
   username: 'Operator',
-  wallpaperId: 'ocean-dusk',
+  wallpaperId: 'jarvis-holo',
   wallpaperSpeed: 1,
   wallpaperDim: 0.15
 };

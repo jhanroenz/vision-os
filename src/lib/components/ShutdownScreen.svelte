@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { isTauri } from '$lib/platform/browser';
   import { completeShutdownAnimation } from '$lib/stores/os';
+  import VisionOSLogo from '$lib/components/branding/VisionOSLogo.svelte';
 
   const statuses = [
     'Closing open windows...',
@@ -48,7 +49,7 @@
   <div class="shutdown-glow"></div>
   <div class="shutdown-content">
     <div class="shutdown-ring">
-      <span class="shutdown-icon">◎</span>
+      <span class="shutdown-icon"><VisionOSLogo size={72} animated={false} /></span>
     </div>
     <h2>VisionOS</h2>
 

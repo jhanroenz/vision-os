@@ -4,6 +4,7 @@
   import { startMenuOpen, toggleStartMenu, hideStartMenu } from '$lib/stores/os';
   import { getAppById, openApp } from '$lib/apps/registry';
   import { settings } from '$lib/stores/settings';
+  import VisionOSLogo from '$lib/components/branding/VisionOSLogo.svelte';
 
   let clock = $state('');
   let date = $state('');
@@ -35,7 +36,7 @@
     onclick={handleStartClick}
     title="Start"
   >
-    <span class="start-icon">◎</span>
+    <span class="start-icon"><VisionOSLogo size={20} /></span>
     <span>Vision</span>
   </button>
 
