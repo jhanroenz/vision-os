@@ -1,10 +1,26 @@
 name: Release
 
+# Manual runs only while iterating on Windows packaging.
+# Re-enable `push: tags` when all platforms are green.
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+    inputs:
+      build_linux:
+        description: 'Build Linux (.deb + optional AppImage)'
+        type: boolean
+        default: false
+      build_windows:
+        description: 'Build Windows (NSIS installer)'
+        type: boolean
+        default: true
+      build_macos:
+        description: 'Build macOS (DMG)'
+        type: boolean
+        default: false
+      create_release:
+        description: 'Upload artifacts to a GitHub Release (requires a tag ref)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -13,27 +29,36 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  matrix-prep:
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.set-matrix.outputs.include }}
+    steps:
+      - id: set-matrix
+        run: |
+          set -euo pipefail
+          MATRIX='[]'
+          if [ "${{ inputs.build_linux }}" = "true" ]; then
+            MATRIX=$(echo "$MATRIX" | jq -c '. + [{"os":"ubuntu-24.04","platform":"linux","arch":"x64","bundles":"deb"}]')
+          fi
+          if [ "${{ inputs.build_windows }}" = "true" ]; then
+            MATRIX=$(echo "$MATRIX" | jq -c '. + [{"os":"windows-latest","platform":"win32","arch":"x64","bundles":"nsis"}]')
+          fi
+          if [ "${{ inputs.build_macos }}" = "true" ]; then
+            MATRIX=$(echo "$MATRIX" | jq -c '. + [{"os":"macos-latest","platform":"darwin","arch":"arm64","bundles":"dmg"}]')
+          fi
+          echo "include=$MATRIX" >> "$GITHUB_OUTPUT"
+          if [ "$MATRIX" = '[]' ]; then
+            echo 'No platforms selected — enable at least one build_* input.' >&2
+            exit 1
+          fi
+
   build:
+    needs: matrix-prep
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Portable mega-bundle breaks linuxdeploy AppImage on CI; .deb is reliable.
-          - os: ubuntu-24.04
-            platform: linux
-            arch: x64
-            bundles: deb
-            rust_target: ''
-          - os: windows-latest
-            platform: win32
-            arch: x64
-            bundles: nsis
-            rust_target: ''
-          - os: macos-latest
-            platform: darwin
-            arch: arm64
-            bundles: dmg
-            rust_target: ''
+        include: ${{ fromJson(needs.matrix-prep.outputs.include) }}
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -99,7 +124,7 @@ jobs:
 
       - name: Upload Linux portable artifacts
         if: matrix.os == 'ubuntu-24.04'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visionos-linux-portable
           path: |
@@ -110,7 +135,7 @@ jobs:
 
       - name: Upload Windows portable artifacts
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visionos-windows-portable
           path: |
@@ -120,7 +145,7 @@ jobs:
 
       - name: Upload macOS portable artifacts
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visionos-macos-portable
           path: |
@@ -129,13 +154,13 @@ jobs:
           retention-days: 30
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: inputs.create_release == true
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: visionos-*-portable
           merge-multiple: true
