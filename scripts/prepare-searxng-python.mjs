@@ -1,21 +1,18 @@
 #!/usr/bin/env node
 /**
  * Build a portable SearXNG virtualenv using the bundled Python runtime.
+ * Source is copied from vendor/searxng-src (no git clone in CI).
  */
-import { existsSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { execFileSync, execSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 
 const root = resolve(import.meta.dirname, '..');
 const out = resolve(root, 'src-tauri/bundle-runtime');
+const vendorDir = join(root, 'vendor/searxng-src');
 const pythonRoot = join(out, 'python');
 const venvDir = join(out, 'searxng-venv');
 const srcDir = join(out, 'searxng-src');
-const SEARXNG_GIT_REF = process.env.SEARXNG_GIT_REF || 'master';
-const SEARXNG_REPO = 'https://github.com/searxng/searxng.git';
-
-/** Apache sample configs use ':' in filenames; invalid on Windows NTFS. */
-const WINDOWS_SPARSE_EXCLUDE = '!utils/templates/etc/httpd';
 
 function pythonBin() {
   if (process.platform === 'win32') {
@@ -47,57 +44,30 @@ function run(cmd, opts = {}) {
   });
 }
 
-function runGit(args, opts = {}) {
-  execFileSync('git', args, { stdio: 'inherit', ...opts });
-}
-
-function cloneSearxngWindows() {
-  rmSync(srcDir, { recursive: true, force: true });
-  console.log('Cloning SearXNG (sparse checkout — skip NTFS-invalid paths)…');
-  runGit([
-    'clone',
-    '--no-checkout',
-    '--depth',
-    '1',
-    '--branch',
-    SEARXNG_GIT_REF,
-    SEARXNG_REPO,
-    srcDir
-  ]);
-  runGit(['sparse-checkout', 'init', '--no-cone'], { cwd: srcDir });
-  runGit(['sparse-checkout', 'set', '/*', WINDOWS_SPARSE_EXCLUDE], { cwd: srcDir });
-  runGit(['checkout', SEARXNG_GIT_REF], { cwd: srcDir });
-}
-
-function updateSearxngWindows() {
-  console.log('Updating SearXNG source (sparse checkout)…');
-  runGit(['fetch', '--depth', '1', 'origin', SEARXNG_GIT_REF], { cwd: srcDir });
-  runGit(['checkout', SEARXNG_GIT_REF], { cwd: srcDir });
-  runGit(['reset', '--hard', `origin/${SEARXNG_GIT_REF}`], { cwd: srcDir });
-}
-
-function ensureSearxngSource() {
-  if (process.platform === 'win32') {
-    if (existsSync(join(srcDir, '.git'))) {
-      updateSearxngWindows();
-      return;
-    }
-    cloneSearxngWindows();
-    return;
-  }
-
-  if (existsSync(join(srcDir, '.git'))) {
-    console.log('Updating SearXNG source…');
-    run('git fetch --depth 1 origin', { cwd: srcDir });
-    run(`git checkout ${SEARXNG_GIT_REF}`, { cwd: srcDir });
-    run(`git pull --ff-only origin ${SEARXNG_GIT_REF}`, { cwd: srcDir });
-    return;
-  }
-
-  rmSync(srcDir, { recursive: true, force: true });
-  run(
-    `git clone --depth 1 --branch ${SEARXNG_GIT_REF} ${SEARXNG_REPO} "${srcDir}"`
+function hasVendoredSearxng() {
+  return (
+    existsSync(join(vendorDir, 'searx', 'webapp.py')) ||
+    existsSync(join(vendorDir, 'setup.py')) ||
+    existsSync(join(vendorDir, 'pyproject.toml'))
   );
+}
+
+function stageSearxngSource() {
+  if (!hasVendoredSearxng()) {
+    throw new Error(
+      'vendor/searxng-src is missing. On Linux/macOS run: npm run vendor:searxng'
+    );
+  }
+
+  const revPath = join(vendorDir, 'VENDOR_REVISION');
+  if (existsSync(revPath)) {
+    console.log('Using vendored SearXNG', readFileSync(revPath, 'utf8').trim());
+  } else {
+    console.log('Using vendored SearXNG from', vendorDir);
+  }
+
+  rmSync(srcDir, { recursive: true, force: true });
+  cpSync(vendorDir, srcDir, { recursive: true });
 }
 
 function main() {
@@ -116,11 +86,10 @@ function main() {
     `"${vpy}" -m pip install -U pyyaml msgspec typing-extensions pybind11 babel jinja2 flask`
   );
   if (process.platform === 'win32') {
-    // Prefer wheels for native deps before editable SearXNG install.
     run(`"${vpy}" -m pip install -U lxml`);
   }
 
-  ensureSearxngSource();
+  stageSearxngSource();
   run(`"${vpy}" -m pip install --use-pep517 --no-build-isolation -e .`, { cwd: srcDir });
 
   console.log('SearXNG virtualenv ready at', venvDir);
