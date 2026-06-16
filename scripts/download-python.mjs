@@ -22,10 +22,20 @@ const outDir = resolve(root, 'src-tauri/bundle-runtime/python');
 const TARGETS = {
   'linux-x64': 'x86_64-unknown-linux-gnu',
   'linux-arm64': 'aarch64-unknown-linux-gnu',
-  'win32-x64': 'x86_64-pc-windows-msvc-shared',
+  'win32-x64': 'x86_64-pc-windows-msvc',
   'darwin-arm64': 'aarch64-apple-darwin',
   'darwin-x64': 'x86_64-apple-darwin'
 };
+
+function releaseAssetName(target) {
+  return `cpython-${CPYTHON}+${RELEASE}-${target}-install_only.tar.gz`;
+}
+
+function releaseAssetUrl(target) {
+  const name = releaseAssetName(target);
+  // GitHub release assets use literal '+' in the filename (do not URL-encode).
+  return `https://github.com/astral-sh/python-build-standalone/releases/download/${RELEASE}/${name}`;
+}
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -51,8 +61,8 @@ async function download(url, dest) {
 
 async function main() {
   const { platform, target } = parseArgs();
-  const file = `cpython-${CPYTHON}+${RELEASE}-${target}-install_only.tar.gz`;
-  const url = `https://github.com/astral-sh/python-build-standalone/releases/download/${RELEASE}/${encodeURIComponent(`cpython-${CPYTHON}+${RELEASE}-${target}-install_only`)}.tar.gz`;
+  const file = releaseAssetName(target);
+  const url = releaseAssetUrl(target);
   const cache = resolve(root, '.cache');
   const archive = join(cache, file);
   const extractDir = join(cache, `python-extract-${target}`);
