@@ -1,4 +1,6 @@
 <script lang="ts">
+  import VisionOSLogo from '$lib/components/branding/VisionOSLogo.svelte';
+
   interface Props {
     windowId?: string;
   }
@@ -7,7 +9,7 @@
 </script>
 
 <div class="app-about">
-  <div class="about-logo">◎</div>
+  <div class="about-logo"><VisionOSLogo size={60} /></div>
   <h2>VisionOS</h2>
   <p class="about-version">Version 0.1.0 · Preview</p>
   <p class="about-desc">

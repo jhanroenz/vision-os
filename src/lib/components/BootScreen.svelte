@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { booted } from '$lib/stores/os';
+  import JarvisBootBrand from '$lib/components/branding/JarvisBootBrand.svelte';
+  import JarvisHoloConstellations from '$lib/components/branding/JarvisHoloConstellations.svelte';
 
   const statuses = [
     'Initializing neural core...',
@@ -43,14 +45,9 @@
 
 <div class="boot" class:fade-out={fading}>
   <div class="boot-glow"></div>
+  <JarvisHoloConstellations />
   <div class="boot-content">
-    <div class="boot-logo">
-      <div class="boot-ring">
-        <span class="boot-icon">◎</span>
-      </div>
-      <h1>VisionOS</h1>
-      <p>Jarvis Desktop Interface</p>
-    </div>
+    <JarvisBootBrand logo3d />
     <div class="boot-progress">
       <div class="boot-progress-bar" style="width: {progress}%"></div>
     </div>

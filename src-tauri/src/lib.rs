@@ -1,4 +1,6 @@
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{include_image, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+
+const WINDOW_ICON: tauri::image::Image<'static> = include_image!("icons/icon.png");
 
 #[tauri::command]
 fn open_browser_window(app: AppHandle, url: String, title: Option<String>) -> Result<(), String> {
@@ -39,6 +41,7 @@ pub fn run() {
             // Dev: `tauri dev` uses devUrl → Vite/SvelteKit on :5173.
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_title("VisionOS");
+                let _ = window.set_icon(WINDOW_ICON.clone());
             }
 
             Ok(())
