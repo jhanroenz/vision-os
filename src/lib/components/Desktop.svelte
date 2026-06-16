@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Wallpaper from './Wallpaper.svelte';
   import DesktopItemIcon from './DesktopItemIcon.svelte';
   import Window from './Window.svelte';
+  import TileDividers from './TileDividers.svelte';
   import { currentDesktopItems, currentFolderName, desktop, folderStack } from '$lib/stores/desktop';
-  import { visibleWindows } from '$lib/stores/windows';
+  import { visibleWindows, windows } from '$lib/stores/windows';
   import {
     clearSelectedDesktopKey,
     contextMenu,
@@ -43,6 +45,12 @@
     if (!dragged) return;
     desktop.moveItem(dragged, get(folderStack));
   }
+
+  onMount(() => {
+    const onResize = () => windows.relayoutTiled();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  });
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
@@ -77,4 +85,6 @@
   {#each $visibleWindows as win (win.id)}
     <Window {win} />
   {/each}
+
+  <TileDividers />
 </div>

@@ -4,6 +4,7 @@ export interface AppDefinition {
   id: string;
   name: string;
   icon: string;
+  launcher?: boolean;
   defaultWidth?: number;
   defaultHeight?: number;
   component: Component;
@@ -20,6 +21,7 @@ export interface WindowState {
   zIndex: number;
   minimized: boolean;
   maximized: boolean;
+  tiled?: boolean;
   prevBounds?: { x: number; y: number; width: number; height: number };
   props?: Record<string, unknown>;
 }

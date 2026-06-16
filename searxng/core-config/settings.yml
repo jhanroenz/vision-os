@@ -1,0 +1,16 @@
+# Local SearXNG config for VisionOS.
+# JSON format is required for the research web_search tool.
+
+use_default_settings: true
+
+server:
+  secret_key: "3669962bb5d9d84d00ac4a842e7f70582c210d183ba21984f371c96ebaf655dd"
+  bind_address: "0.0.0.0"
+  limiter: false
+  image_proxy: false
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
