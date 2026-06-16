@@ -3,7 +3,7 @@
  * CI check: bundled runtime must not ship secrets or dev databases.
  * Templates like `.env.example` are allowed.
  */
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
@@ -18,7 +18,8 @@ function isBlockedEnvFile(name) {
 function walk(dir, bad) {
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
-    const st = statSync(full);
+    const st = lstatSync(full);
+    if (st.isSymbolicLink()) continue;
     if (st.isDirectory()) {
       walk(full, bad);
       continue;
