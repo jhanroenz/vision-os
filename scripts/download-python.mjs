@@ -11,8 +11,8 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import { execSync } from 'node:child_process';
 import { Readable } from 'node:stream';
+import { extractArchive } from './archive.js';
 
 const RELEASE = process.env.PYTHON_STANDALONE_RELEASE || '20250317';
 const CPYTHON = process.env.PYTHON_VERSION || '3.12.9';
@@ -40,7 +40,7 @@ function parseArgs() {
   if (!target) {
     throw new Error(`Unsupported Python target: ${key}`);
   }
-  return target;
+  return { platform, arch, target };
 }
 
 async function download(url, dest) {
@@ -50,7 +50,7 @@ async function download(url, dest) {
 }
 
 async function main() {
-  const target = parseArgs();
+  const { platform, target } = parseArgs();
   const file = `cpython-${CPYTHON}+${RELEASE}-${target}-install_only.tar.gz`;
   const url = `https://github.com/astral-sh/python-build-standalone/releases/download/${RELEASE}/${encodeURIComponent(`cpython-${CPYTHON}+${RELEASE}-${target}-install_only`)}.tar.gz`;
   const cache = resolve(root, '.cache');
@@ -69,7 +69,7 @@ async function main() {
     console.log('Using cached', archive);
   }
 
-  execSync(`tar -xzf "${archive}" -C "${extractDir}"`, { stdio: 'inherit' });
+  extractArchive(archive, 'tar.gz', extractDir, platform);
   const pythonDir = join(extractDir, 'python');
   if (!existsSync(pythonDir)) {
     throw new Error(`Expected python/ directory in ${extractDir}`);
