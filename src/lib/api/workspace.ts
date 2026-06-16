@@ -31,7 +31,15 @@ export interface WorkspaceStat {
   modified: number;
 }
 
-const FILES_THREAD = 'visionos-files';
+const DEFAULT_THREAD_ID = 'visionos-files';
+
+export interface WorkspaceContext {
+  threadId?: string;
+}
+
+function resolveThreadId(context?: WorkspaceContext): string {
+  return context?.threadId ?? DEFAULT_THREAD_ID;
+}
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
@@ -74,18 +82,18 @@ export const WorkspaceFS = {
     return api('/api/workspace/root');
   },
 
-  async list(path = '.'): Promise<WorkspaceListing> {
+  async list(path = '.', context?: WorkspaceContext): Promise<WorkspaceListing> {
     const normalized = normalizeWorkspacePath(path);
-    return api(`/api/workspace?${qs({ threadId: FILES_THREAD, path: normalized })}`);
+    return api(`/api/workspace?${qs({ threadId: resolveThreadId(context), path: normalized })}`);
   },
 
-  async read(path: string): Promise<WorkspaceFileData> {
+  async read(path: string, context?: WorkspaceContext): Promise<WorkspaceFileData> {
     const normalized = normalizeWorkspacePath(path);
-    return api(`/api/workspace/file?${qs({ threadId: FILES_THREAD, path: normalized })}`);
+    return api(`/api/workspace/file?${qs({ threadId: resolveThreadId(context), path: normalized })}`);
   },
 
-  async readText(path: string): Promise<string | null> {
-    const file = await WorkspaceFS.read(path);
+  async readText(path: string, context?: WorkspaceContext): Promise<string | null> {
+    const file = await WorkspaceFS.read(path, context);
     if (file.binary && !file.image) return null;
     return file.content ?? '';
   },

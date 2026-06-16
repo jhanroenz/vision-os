@@ -11,6 +11,7 @@ import {
   streamChatCompletionChunks,
 } from "./llmStream.js";
 import { fetchLlmWithRateLimit } from "./llmRateLimit.js";
+import { createCursorChatCompletion } from "./cursorCompletion.js";
 let activeConversationId = null;
 
 export function getActiveConversationId() {
@@ -31,9 +32,7 @@ export async function createChatCompletion(
   } = {},
 ) {
   if (isCursorProvider()) {
-    throw new Error(
-      "Cursor provider handles agent turns via the Cursor SDK. Switch to another provider for auxiliary LLM calls (research synthesis, compaction, etc.).",
-    );
+    return createCursorChatCompletion(messages);
   }
 
   const headers = getLlmAuthHeadersForRequest();
@@ -102,9 +101,11 @@ export async function* streamChatCompletion(
   } = {},
 ) {
   if (isCursorProvider()) {
-    throw new Error(
-      "Cursor provider handles agent turns via the Cursor SDK. Switch to another provider for auxiliary LLM calls (research synthesis, compaction, etc.).",
-    );
+    const response = await createCursorChatCompletion(messages);
+    for (const event of completionToStreamEvents(response)) {
+      yield event;
+    }
+    return;
   }
 
   if (!config.llm.streaming) {

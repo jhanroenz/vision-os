@@ -1,0 +1,3 @@
+{"ts":"2026-06-16T13:06:52.848Z","conversationId":"f7196b08-05c2-43ea-9dba-2d1369570148","turnId":"d1f2986e-b5ae-4540-951f-f3991cec0719","seq":1,"type":"turn_start","data":{"turnId":"d1f2986e-b5ae-4540-951f-f3991cec0719","startedAt":"2026-06-16T13:06:52.848Z","message":"Who are you","mode":"chat"}}
+{"ts":"2026-06-16T13:06:52.882Z","conversationId":"f7196b08-05c2-43ea-9dba-2d1369570148","turnId":"d1f2986e-b5ae-4540-951f-f3991cec0719","seq":2,"type":"status","data":{"type":"status","phase":"cursor","message":"Running via Cursor Composer…"}}
+{"ts":"2026-06-16T13:06:52.883Z","conversationId":"f7196b08-05c2-43ea-9dba-2d1369570148","turnId":"d1f2986e-b5ae-4540-951f-f3991cec0719","seq":3,"type":"turn_intent","data":{"type":"turn_intent","profile":"chat","casualChat":false}}
