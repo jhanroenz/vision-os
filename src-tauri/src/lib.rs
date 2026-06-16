@@ -1,3 +1,6 @@
+mod backend;
+
+use backend::{manage_backend, navigate_main_window, on_run_event, start_packaged_backend, BACKEND_PORT};
 use tauri::{include_image, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 const WINDOW_ICON: tauri::image::Image<'static> = include_image!("icons/icon.png");
@@ -8,10 +11,13 @@ fn open_browser_window(app: AppHandle, url: String, title: Option<String>) -> Re
         .parse()
         .map_err(|e| format!("Invalid URL: {e}"))?;
 
-    let label = format!("browser-{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis())
-        .unwrap_or(0));
+    let label = format!(
+        "browser-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0)
+    );
 
     WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(parsed))
         .title(title.unwrap_or_else(|| "Browser".to_string()))
@@ -29,6 +35,8 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![open_browser_window])
         .setup(|app| {
+            manage_backend(app);
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -37,15 +45,27 @@ pub fn run() {
                 )?;
             }
 
-            // Production: SvelteKit adapter-node server should be started before the webview loads.
-            // Dev: `tauri dev` uses devUrl → Vite/SvelteKit on :5173.
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_title("VisionOS");
                 let _ = window.set_icon(WINDOW_ICON.clone());
+
+                if cfg!(debug_assertions) {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+
+            if !cfg!(debug_assertions) {
+                let handle = app.handle().clone();
+                start_packaged_backend(&handle)?;
+                navigate_main_window(&handle, BACKEND_PORT)?;
             }
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app_handle, event| {
+            on_run_event(app_handle, &event);
+        });
 }

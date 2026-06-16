@@ -1,5 +1,5 @@
 import { getDb } from "./db.js";
-import { getCodeDefaultsBySection } from "./settingsRegistry.js";
+import { getSeedDefaults } from "./seedDefaults.js";
 
 const SETTINGS_ROW_ID = 1;
 
@@ -66,7 +66,7 @@ export function seedAppSettingsIfEmpty() {
     .get(SETTINGS_ROW_ID);
   if (existing) return { seeded: false };
 
-  const defaults = getCodeDefaultsBySection();
+  const defaults = getSeedDefaults();
   const { updatedAt } = saveAppSettings(defaults);
   return { seeded: true, payload: defaults, updatedAt };
 }

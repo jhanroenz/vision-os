@@ -1,9 +1,10 @@
-import dotenv from 'dotenv';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadVisionEnv } from './dotenvLoad.js';
+import { resolveDataDir, resolveVisionRoot } from './paths.js';
 
-const visionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+loadVisionEnv();
 
-dotenv.config({ path: path.join(visionRoot, '.env') });
+const visionRoot = resolveVisionRoot();
+const dataDir = resolveDataDir();
 
-export { visionRoot };
+export { visionRoot, dataDir };
