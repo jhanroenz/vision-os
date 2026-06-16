@@ -6,7 +6,7 @@ name: visionos-searxng
 services:
   searxng:
     container_name: visionos-searxng
-    image: docker.io/searxng/searxng:${SEARXNG_VERSION:-latest}
+    image: ${SEARXNG_IMAGE:-docker.io/searxng/searxng:${SEARXNG_VERSION:-latest}}
     # "no" avoids Podman/crun ghost containers when dev scripts recreate the service.
     restart: "no"
     ports:

@@ -1,0 +1,12 @@
+{
+  "bundle": {
+    "resources": {
+      "bundle-runtime/server": "server",
+      "bundle-runtime/node": "node",
+      "bundle-runtime/python": "python",
+      "bundle-runtime/searxng-venv": "searxng-venv",
+      "bundle-runtime/searxng-src": "searxng-src",
+      "bundle-runtime/searxng": "searxng"
+    }
+  }
+}
