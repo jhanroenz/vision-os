@@ -18,7 +18,7 @@ jobs:
           - os: ubuntu-24.04
             platform: linux
             arch: x64
-            bundles: appimage
+            bundles: appimage,deb
             rust_target: ''
           - os: windows-latest
             platform: win32
@@ -58,7 +58,9 @@ jobs:
             libxml2-dev \
             libxslt1-dev \
             zlib1g-dev \
-            libffi-dev
+            libffi-dev \
+            libfuse2 \
+            file
 
       - name: Install Windows build dependencies
         if: matrix.os == 'windows-latest'
@@ -76,22 +78,11 @@ jobs:
           node scripts/prepare-searxng-python.mjs
 
       - name: Verify bundle contains no secrets or dev databases
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t bad < <(find src-tauri/bundle-runtime \( \
-            -name '.env' -o \
-            -name 'jarvis.db' -o \
-            \( -name '.env.*' ! -name '*.example' \) \
-          \))
-          if ((${#bad[@]})); then
-            echo 'Bundle must not ship .env files (templates like .env.example are OK) or jarvis.db' >&2
-            printf '%s\n' "${bad[@]}"
-            exit 1
-          fi
-          echo 'Bundle secret check passed'
+        run: node scripts/verify-bundle-secrets.mjs
 
       - name: Build Tauri release
+        env:
+          NO_STRIP: ${{ matrix.os == 'ubuntu-24.04' && 'true' || '' }}
         run: npm run tauri:build:raw -- --config src-tauri/tauri.bundle.conf.json --bundles ${{ matrix.bundles }}
 
       - name: Upload Linux portable artifacts

@@ -17,8 +17,8 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import { execSync } from 'node:child_process';
 import { Readable } from 'node:stream';
+import { extractArchive } from './archive.js';
 
 const NODE_VERSION = process.env.NODE_VERSION || '22.16.0';
 const root = resolve(import.meta.dirname, '..');
@@ -53,15 +53,6 @@ async function download(url, dest) {
   await pipeline(Readable.fromWeb(res.body), createWriteStream(dest));
 }
 
-/** Extract Node archives cross-platform (Windows GHA has tar, not unzip). */
-function extractArchive(archive, ext, destDir) {
-  if (ext === 'zip') {
-    execSync(`tar -xf "${archive}" -C "${destDir}"`, { stdio: 'inherit' });
-    return;
-  }
-  execSync(`tar -xJf "${archive}" -C "${destDir}"`, { stdio: 'inherit' });
-}
-
 async function main() {
   const { platform, arch } = parseArgs();
   const { ext, folder } = nodeDist(platform, arch);
@@ -83,7 +74,7 @@ async function main() {
 
   rmSync(extractRoot, { recursive: true, force: true });
 
-  extractArchive(archive, ext, cache);
+  extractArchive(archive, ext, cache, platform);
 
   cpSync(extractRoot, outDir, { recursive: true });
   console.log('Node runtime ready at', outDir);
