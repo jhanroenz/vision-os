@@ -10,6 +10,8 @@
     hideStartMenu();
   }
 
+  const launchableApps = APPS.filter((app) => app.launcher !== false);
+
   async function handleShutdown() {
     const ok = await dialogConfirm({
       title: 'Shut down',
@@ -36,7 +38,7 @@
     </header>
 
     <div class="start-menu-apps">
-      {#each APPS as app (app.id)}
+      {#each launchableApps as app (app.id)}
         <button class="start-menu-app" onclick={() => launch(app.id)}>
           <span class="app-icon">{app.icon}</span>
           {app.name}

@@ -12,7 +12,15 @@ import TodoApp from '$lib/components/apps/TodoApp.svelte';
 import BrowserApp from '$lib/components/apps/BrowserApp.svelte';
 import CalendarApp from '$lib/components/apps/CalendarApp.svelte';
 import AboutApp from '$lib/components/apps/AboutApp.svelte';
+import ChatApp from '$lib/components/apps/ChatApp.svelte';
+import ResearchApp from '$lib/components/apps/ResearchApp.svelte';
+import ResearchImageViewerApp from '$lib/components/apps/ResearchImageViewerApp.svelte';
+import ResearchVideoPlayerApp from '$lib/components/apps/ResearchVideoPlayerApp.svelte';
+import ConversationApp from '$lib/components/apps/ConversationApp.svelte';
+import ConversationWorkspaceApp from '$lib/components/apps/ConversationWorkspaceApp.svelte';
+import ConversationTranscriptApp from '$lib/components/apps/ConversationTranscriptApp.svelte';
 import { windows } from '$lib/stores/windows';
+import type { ResearchMediaAsset } from '$lib/api/research';
 
 export const APPS: AppDefinition[] = [
   {
@@ -112,6 +120,67 @@ export const APPS: AppDefinition[] = [
     component: CalendarApp
   },
   {
+    id: 'chat',
+    name: 'Chat',
+    icon: '💬',
+    defaultWidth: 780,
+    defaultHeight: 520,
+    component: ChatApp
+  },
+  {
+    id: 'research',
+    name: 'Research',
+    icon: '🔎',
+    defaultWidth: 980,
+    defaultHeight: 640,
+    component: ResearchApp
+  },
+  {
+    id: 'researchImageViewer',
+    name: 'Image Viewer',
+    icon: '🖼️',
+    launcher: false,
+    defaultWidth: 900,
+    defaultHeight: 640,
+    component: ResearchImageViewerApp
+  },
+  {
+    id: 'researchVideoPlayer',
+    name: 'Video Player',
+    icon: '🎬',
+    launcher: false,
+    defaultWidth: 980,
+    defaultHeight: 680,
+    component: ResearchVideoPlayerApp
+  },
+  {
+    id: 'conversation',
+    name: 'Conversation',
+    icon: '🗨️',
+    launcher: false,
+    defaultWidth: 760,
+    defaultHeight: 560,
+    component: ConversationApp
+  },
+  {
+    id: 'conversationWorkspace',
+    name: 'Workspace',
+    icon: '📂',
+    launcher: false,
+    defaultWidth: 680,
+    defaultHeight: 480,
+    component: ConversationWorkspaceApp
+  },
+  {
+    id: 'conversationTranscript',
+    name: 'Transcript',
+    icon: '📜',
+    launcher: false,
+    defaultWidth: 760,
+    defaultHeight: 520,
+    component: ConversationTranscriptApp
+  },
+  {
     id: 'about',
     name: 'About',
     icon: '◎',
@@ -126,6 +195,10 @@ export function getAppById(id: string): AppDefinition | undefined {
 }
 
 export function openApp(appId: string, options?: { props?: Record<string, unknown>; title?: string }) {
+  if (appId === 'chat') {
+    openChat(options?.props?.initialConversationId as string | undefined);
+    return;
+  }
   const app = getAppById(appId);
   if (!app) return;
   windows.open({
@@ -134,6 +207,20 @@ export function openApp(appId: string, options?: { props?: Record<string, unknow
     width: app.defaultWidth,
     height: app.defaultHeight,
     props: options?.props
+  });
+}
+
+export function openChat(conversationId?: string) {
+  const app = getAppById('chat');
+  if (!app) return;
+  const id = normalizeConversationId(conversationId);
+  windows.open({
+    id: 'chat-main',
+    appId: 'chat',
+    title: 'Chat',
+    width: app.defaultWidth,
+    height: app.defaultHeight,
+    props: id ? { initialConversationId: id } : undefined
   });
 }
 
@@ -159,5 +246,71 @@ export function openFiles(startPath = '.') {
     width: app.defaultWidth,
     height: app.defaultHeight,
     props: { startPath }
+  });
+}
+
+function normalizeConversationId(conversationId: unknown): string {
+  if (typeof conversationId === 'string') return conversationId;
+  if (conversationId == null) return '';
+  return String(conversationId);
+}
+
+export function openConversation(conversationId: string) {
+  const id = normalizeConversationId(conversationId);
+  if (!id) return;
+  openChat(id);
+}
+
+export function openConversationWorkspace(conversationId: string) {
+  const app = getAppById('conversationWorkspace');
+  if (!app) return;
+  const id = normalizeConversationId(conversationId);
+  if (!id) return;
+  windows.open({
+    id: `conversation-workspace-${id}`,
+    appId: 'conversationWorkspace',
+    title: `Workspace ${id.slice(0, 8)}`,
+    width: app.defaultWidth,
+    height: app.defaultHeight,
+    props: { conversationId: id }
+  });
+}
+
+export function openConversationTranscript(conversationId: string) {
+  const app = getAppById('conversationTranscript');
+  if (!app) return;
+  const id = normalizeConversationId(conversationId);
+  if (!id) return;
+  windows.open({
+    id: `conversation-transcript-${id}`,
+    appId: 'conversationTranscript',
+    title: `Transcript ${id.slice(0, 8)}`,
+    width: app.defaultWidth,
+    height: app.defaultHeight,
+    props: { conversationId: id }
+  });
+}
+
+export function openResearchImageViewer(mediaItems: ResearchMediaAsset[], index: number) {
+  const app = getAppById('researchImageViewer');
+  if (!app) return;
+  windows.open({
+    appId: app.id,
+    title: 'Image Viewer',
+    width: app.defaultWidth,
+    height: app.defaultHeight,
+    props: { mediaItems, index }
+  });
+}
+
+export function openResearchVideoPlayer(media: ResearchMediaAsset) {
+  const app = getAppById('researchVideoPlayer');
+  if (!app) return;
+  windows.open({
+    appId: app.id,
+    title: media.title ? `Video Player - ${media.title}` : 'Video Player',
+    width: app.defaultWidth,
+    height: app.defaultHeight,
+    props: { media }
   });
 }
