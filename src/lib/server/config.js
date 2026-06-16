@@ -1,14 +1,16 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import dotenv from "dotenv";
+import {
+  defaultWorkspaceDir,
+  resolveDataDir,
+  resolveVisionRoot,
+} from "./paths.js";
+import { PACKAGED_PORTS, packagedSearxngBase } from "./ports.js";
+import { loadVisionEnv } from "./dotenvLoad.js";
 
-/** VisionOS project root (src/lib/server → ../../../) */
-const rootDir = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-);
+loadVisionEnv();
 
-dotenv.config({ path: path.join(rootDir, ".env") });
+const rootDir = resolveVisionRoot();
+const dataDir = resolveDataDir();
 
 export const config = {
   llm: {
@@ -73,21 +75,27 @@ export const config = {
     transcriptMaxChars: Number(process.env.MINIFY_TRANSCRIPT_MAX_CHARS ?? 1200),
   },
   dbPath: path.resolve(
-    process.env.DATABASE_PATH ?? path.join(rootDir, "data", "jarvis.db"),
+    process.env.DATABASE_PATH ?? path.join(dataDir, "jarvis.db"),
   ),
   conversationsDir: path.resolve(
     process.env.CONVERSATIONS_DIR ??
-      path.join(rootDir, "data", "conversations"),
+      path.join(dataDir, "conversations"),
   ),
   workspaceDir: path.resolve(
-    process.env.WORKSPACE_DIR ?? path.join(rootDir, "../.."),
+    process.env.WORKSPACE_DIR ??
+      (process.env.VISIONOS_PACKAGED === "true"
+        ? defaultWorkspaceDir(dataDir)
+        : path.join(rootDir, "../..")),
   ),
   workspaceFileMap: {
     maxDepth: Number(process.env.WORKSPACE_FILE_MAP_MAX_DEPTH ?? 12),
     maxFiles: Number(process.env.WORKSPACE_FILE_MAP_MAX_FILES ?? 500),
     maxChars: Number(process.env.WORKSPACE_FILE_MAP_MAX_CHARS ?? 12000),
   },
-  port: Number(process.env.PORT ?? 3001),
+  port: Number(
+    process.env.PORT ??
+      (process.env.VISIONOS_PACKAGED === "true" ? PACKAGED_PORTS.backend : 5173),
+  ),
   prompt: {
     compactMode: process.env.PROMPT_COMPACT_MODE !== "false",
   },
@@ -212,7 +220,9 @@ export const config = {
     maxBytes: Number(process.env.FILE_READ_MAX_BYTES ?? 512000),
   },
   searxng: {
-    apiBase: process.env.SEARXNG_API_BASE ?? "http://localhost:8080",
+    apiBase:
+      process.env.SEARXNG_API_BASE ??
+      (process.env.VISIONOS_PACKAGED === "true" ? packagedSearxngBase() : "http://localhost:8080"),
     numResults: Number(process.env.SEARXNG_NUM_RESULTS ?? 5),
     fetchPages: Number(
       process.env.SEARXNG_FETCH_PAGES ?? process.env.SEARXNG_NUM_RESULTS ?? 5,
@@ -265,7 +275,7 @@ export const config = {
     /** Full per-conversation debug logs (JSONL). */
     enabled: process.env.TRANSCRIPT_LOG_ENABLED !== "false",
     dir: path.resolve(
-      process.env.TRANSCRIPT_DIR ?? path.join(rootDir, "data", "transcripts"),
+      process.env.TRANSCRIPT_DIR ?? path.join(dataDir, "transcripts"),
     ),
     /** Max chars per string field; 0 = unlimited (recommended for debugging). */
     maxFieldChars: Number(process.env.TRANSCRIPT_MAX_FIELD_CHARS ?? 0),

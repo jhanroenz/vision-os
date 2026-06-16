@@ -20,6 +20,7 @@ import {
   getRestartRequiredSections,
   getSectionMeta,
 } from "./settingsRegistry.js";
+import { getSeedDefaults } from "./seedDefaults.js";
 import {
   normalizeLlmBaseUrl,
   detectProviderFromBaseUrl,
@@ -158,6 +159,22 @@ function applyLlmSectionFromPayload(llm) {
     } catch (error) {
       console.warn("[settings] Invalid LLM section:", error.message);
     }
+  }
+}
+
+function applyPackagedRuntimeOverrides() {
+  if (process.env.VISIONOS_PACKAGED !== "true") return;
+  if (process.env.SEARXNG_API_BASE) {
+    config.searxng.apiBase = process.env.SEARXNG_API_BASE;
+  }
+  if (process.env.WORKSPACE_DIR) {
+    config.workspaceDir = path.resolve(process.env.WORKSPACE_DIR);
+  }
+  if (process.env.DATABASE_PATH) {
+    config.dbPath = path.resolve(process.env.DATABASE_PATH);
+  }
+  if (process.env.TRANSCRIPT_DIR) {
+    config.transcript.dir = path.resolve(process.env.TRANSCRIPT_DIR);
   }
 }
 
@@ -752,12 +769,14 @@ export async function initSettings() {
     applySettingsOverlay(config, stored.payload);
     applyInternalPayloadExtras(stored.payload);
     applyLlmSectionFromPayload(stored.payload.llm);
+    applyPackagedRuntimeOverrides();
   } else {
-    const defaults = getCodeDefaultsBySection();
+    const defaults = getSeedDefaults();
     persistedPayload = defaults;
     applySettingsOverlay(config, defaults);
   }
 
+  applyPackagedRuntimeOverrides();
   await syncWorkspaceDirFromEnv();
 
   bootstrapApiKeysFromEnv();
