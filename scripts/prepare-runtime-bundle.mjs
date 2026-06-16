@@ -50,7 +50,7 @@ function stripEnvFiles(dir) {
       stripEnvFiles(full);
       continue;
     }
-    if (name === '.env' || name.startsWith('.env.')) {
+    if (name === '.env' || (name.startsWith('.env.') && !name.endsWith('.example'))) {
       rmSync(full, { force: true });
       console.warn('Removed secret file from bundle:', full);
     }

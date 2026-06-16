@@ -79,9 +79,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if find src-tauri/bundle-runtime \( -name '.env' -o -name '.env.*' -o -name 'jarvis.db' \) | grep -q .; then
-            echo 'Bundle must not ship .env files or jarvis.db' >&2
-            find src-tauri/bundle-runtime \( -name '.env' -o -name '.env.*' -o -name 'jarvis.db' \)
+          mapfile -t bad < <(find src-tauri/bundle-runtime \( \
+            -name '.env' -o \
+            -name 'jarvis.db' -o \
+            \( -name '.env.*' ! -name '*.example' \) \
+          \))
+          if ((${#bad[@]})); then
+            echo 'Bundle must not ship .env files (templates like .env.example are OK) or jarvis.db' >&2
+            printf '%s\n' "${bad[@]}"
             exit 1
           fi
           echo 'Bundle secret check passed'
