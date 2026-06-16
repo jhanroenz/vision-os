@@ -4,7 +4,7 @@
  */
 import { existsSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 
 const root = resolve(import.meta.dirname, '..');
 const out = resolve(root, 'src-tauri/bundle-runtime');
@@ -12,6 +12,10 @@ const pythonRoot = join(out, 'python');
 const venvDir = join(out, 'searxng-venv');
 const srcDir = join(out, 'searxng-src');
 const SEARXNG_GIT_REF = process.env.SEARXNG_GIT_REF || 'master';
+const SEARXNG_REPO = 'https://github.com/searxng/searxng.git';
+
+/** Apache sample configs use ':' in filenames; invalid on Windows NTFS. */
+const WINDOWS_SPARSE_EXCLUDE = '!utils/templates/etc/httpd';
 
 function pythonBin() {
   if (process.platform === 'win32') {
@@ -43,18 +47,56 @@ function run(cmd, opts = {}) {
   });
 }
 
+function runGit(args, opts = {}) {
+  execFileSync('git', args, { stdio: 'inherit', ...opts });
+}
+
+function cloneSearxngWindows() {
+  rmSync(srcDir, { recursive: true, force: true });
+  console.log('Cloning SearXNG (sparse checkout — skip NTFS-invalid paths)…');
+  runGit([
+    'clone',
+    '--no-checkout',
+    '--depth',
+    '1',
+    '--branch',
+    SEARXNG_GIT_REF,
+    SEARXNG_REPO,
+    srcDir
+  ]);
+  runGit(['sparse-checkout', 'init', '--no-cone'], { cwd: srcDir });
+  runGit(['sparse-checkout', 'set', '/*', WINDOWS_SPARSE_EXCLUDE], { cwd: srcDir });
+  runGit(['checkout', SEARXNG_GIT_REF], { cwd: srcDir });
+}
+
+function updateSearxngWindows() {
+  console.log('Updating SearXNG source (sparse checkout)…');
+  runGit(['fetch', '--depth', '1', 'origin', SEARXNG_GIT_REF], { cwd: srcDir });
+  runGit(['checkout', SEARXNG_GIT_REF], { cwd: srcDir });
+  runGit(['reset', '--hard', `origin/${SEARXNG_GIT_REF}`], { cwd: srcDir });
+}
+
 function ensureSearxngSource() {
+  if (process.platform === 'win32') {
+    if (existsSync(join(srcDir, '.git'))) {
+      updateSearxngWindows();
+      return;
+    }
+    cloneSearxngWindows();
+    return;
+  }
+
   if (existsSync(join(srcDir, '.git'))) {
     console.log('Updating SearXNG source…');
     run('git fetch --depth 1 origin', { cwd: srcDir });
     run(`git checkout ${SEARXNG_GIT_REF}`, { cwd: srcDir });
-    run('git pull --ff-only origin ' + SEARXNG_GIT_REF, { cwd: srcDir });
+    run(`git pull --ff-only origin ${SEARXNG_GIT_REF}`, { cwd: srcDir });
     return;
   }
 
   rmSync(srcDir, { recursive: true, force: true });
   run(
-    `git clone --depth 1 --branch ${SEARXNG_GIT_REF} https://github.com/searxng/searxng.git "${srcDir}"`
+    `git clone --depth 1 --branch ${SEARXNG_GIT_REF} ${SEARXNG_REPO} "${srcDir}"`
   );
 }
 
