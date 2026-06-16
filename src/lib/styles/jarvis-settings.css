@@ -1,0 +1,282 @@
+/* Jarvis settings shell (unified Settings app) */
+
+.jarvis-settings-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--surface, #12151f);
+  color: var(--text, #e6edf3);
+  overflow: hidden;
+}
+
+.jarvis-settings-app .settings-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--glass-border, #30363d);
+  flex-shrink: 0;
+}
+
+.jarvis-settings-app .settings-overlay-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.jarvis-settings-app .settings-overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.jarvis-settings-app .settings-overlay-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 160px 1fr;
+}
+
+.jarvis-settings-app .settings-nav {
+  border-right: 1px solid var(--glass-border, #30363d);
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  overflow-y: auto;
+}
+
+.jarvis-settings-app .settings-nav-btn {
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted, #8b949e);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.jarvis-settings-app .settings-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text, #e6edf3);
+}
+
+.jarvis-settings-app .settings-nav-btn.active {
+  background: rgba(108, 92, 231, 0.15);
+  color: var(--text, #e6edf3);
+  font-weight: 600;
+}
+
+.jarvis-settings-app .settings-content {
+  padding: 0.85rem 1rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.jarvis-settings-app .settings-section-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 640px;
+}
+
+.jarvis-settings-app .settings-section-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.jarvis-settings-app .settings-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #8b949e);
+  line-height: 1.45;
+}
+
+.jarvis-settings-app .settings-hint code {
+  background: var(--surface-raised, #1a1f2e);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+.jarvis-settings-app .settings-error {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  color: #f85149;
+}
+
+.jarvis-settings-app .settings-success {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  color: #3fb950;
+}
+
+.jarvis-settings-app .settings-overlay-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.5rem 0.85rem;
+  border-top: 1px solid var(--glass-border, #30363d);
+  font-size: 0.72rem;
+  color: var(--text-muted, #8b949e);
+  flex-shrink: 0;
+}
+
+.jarvis-settings-app .settings-restart-hint {
+  color: #d29922;
+}
+
+.jarvis-settings-app .restart-badge {
+  display: inline-block;
+  margin-left: 0.25rem;
+  font-size: 0.7rem;
+  color: #d29922;
+}
+
+.jarvis-settings-app .settings-rate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.75rem;
+}
+
+.jarvis-settings-app .groq-live-hint {
+  color: var(--text-muted, #8b949e);
+}
+
+.jarvis-settings-app .settings-divider {
+  border: none;
+  border-top: 1px solid var(--glass-border, #30363d);
+  margin: 0.75rem 0;
+}
+
+.jarvis-settings-app .modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-muted, #8b949e);
+}
+
+.jarvis-settings-app .modal-field input,
+.jarvis-settings-app .modal-field textarea,
+.jarvis-settings-app .modal-field select {
+  border: 1px solid var(--glass-border, #2d333b);
+  background: var(--surface-raised, #0d1117);
+  color: var(--text, #e6edf3);
+  border-radius: 6px;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8rem;
+}
+
+.jarvis-settings-app .modal-field input:focus,
+.jarvis-settings-app .modal-field textarea:focus,
+.jarvis-settings-app .modal-field select:focus {
+  outline: none;
+  border-color: var(--accent, #6c5ce7);
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.25);
+}
+
+.jarvis-settings-app .modal-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted, #8b949e) 50%),
+    linear-gradient(135deg, var(--text-muted, #8b949e) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 1.85rem;
+}
+
+.jarvis-settings-app .modal-field select option {
+  background: var(--surface-raised, #0d1117);
+  color: var(--text, #e6edf3);
+}
+
+.jarvis-settings-app .modal-field input[type='range'] {
+  padding: 0;
+  accent-color: var(--accent, #6c5ce7);
+}
+
+.jarvis-settings-app .modal-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.jarvis-settings-app .modal-field .vos-toggle-label {
+  color: var(--text-muted, #8b949e);
+}
+
+.jarvis-settings-app .field-hint {
+  font-size: 0.72rem;
+  color: #6e7681;
+}
+
+.jarvis-settings-app .small-btn {
+  border: 1px solid var(--glass-border, #2d333b);
+  background: var(--surface-raised, #161b22);
+  color: var(--text, #e6edf3);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.jarvis-settings-app .small-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.jarvis-settings-app .small-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.jarvis-settings-app .small-btn.primary {
+  background: #238636;
+  border-color: #238636;
+  color: #fff;
+}
+
+.jarvis-settings-app .small-btn.primary:hover:not(:disabled) {
+  background: #2ea043;
+}
+
+/* Display panel sections */
+.jarvis-settings-app .display-settings-panel .display-section h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #8b949e);
+  margin: 0.5rem 0 0.5rem;
+}
+
+.jarvis-settings-app .display-settings-panel .display-section:first-of-type h4 {
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .jarvis-settings-app .settings-overlay-body {
+    grid-template-columns: 1fr;
+  }
+
+  .jarvis-settings-app .settings-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--glass-border, #30363d);
+  }
+}
+
+@media (max-width: 520px) {
+  .jarvis-settings-app .settings-rate-grid {
+    grid-template-columns: 1fr;
+  }
+}
