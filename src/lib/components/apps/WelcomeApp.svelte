@@ -1,4 +1,6 @@
 <script lang="ts">
+  import VisionOSLogo from '$lib/components/branding/VisionOSLogo.svelte';
+
   interface Props {
     windowId?: string;
   }
@@ -8,7 +10,7 @@
 
 <div class="app-welcome">
   <div class="welcome-hero">
-    <span class="welcome-icon">◎</span>
+    <span class="welcome-icon"><VisionOSLogo size={56} /></span>
     <h2>Welcome to VisionOS</h2>
     <p class="welcome-tagline">The next-generation desktop for Jarvis</p>
   </div>

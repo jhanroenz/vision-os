@@ -1,4 +1,5 @@
 @import './lib/styles/apps.css';
+@import './lib/styles/visionos-logo.css';
 
 *,
 *::before,
@@ -62,17 +63,33 @@ body {
 
 .boot-glow {
   position: absolute;
-  width: 500px;
-  height: 500px;
+  width: 520px;
+  height: 520px;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-  filter: blur(60px);
-  animation: bootPulse 3s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(46, 200, 255, 0.4) 0%, rgba(0, 80, 170, 0.12) 45%, transparent 72%);
+  filter: blur(64px);
+  animation: bootHoloBreath 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  z-index: 0;
 }
 
-@keyframes bootPulse {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
+.jarvis-holo-constellations {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bootHoloBreath {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.28);
+  }
 }
 
 .boot-content {
@@ -81,37 +98,45 @@ body {
   z-index: 1;
 }
 
-.boot-ring {
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 20px;
-  border-radius: 50%;
-  border: 2px solid var(--glass-border);
+.boot-logo-mark {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 0 40px var(--accent-glow);
-  animation: ringSpin 8s linear infinite;
-}
-
-@keyframes ringSpin {
-  from { box-shadow: 0 0 40px var(--accent-glow); }
-  50% { box-shadow: 0 0 60px var(--accent-glow), inset 0 0 20px rgba(108,92,231,0.2); }
-  to { box-shadow: 0 0 40px var(--accent-glow); }
-}
-
-.boot-icon {
-  font-size: 40px;
-  color: var(--accent);
+  margin: 0 auto 24px;
+  min-height: 104px;
 }
 
 .boot-logo h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
   font-size: 38px;
   font-weight: 200;
-  letter-spacing: 6px;
   text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.boot-logo-word {
+  letter-spacing: 6px;
+}
+
+.boot-logo-word:first-of-type {
+  margin-right: -6px;
+  padding-right: 0.22em;
+}
+
+.boot-logo-word:last-of-type {
+  padding-left: 0.22em;
+}
+
+.boot-logo-sep {
+  display: inline-block;
+  width: 1px;
+  height: 1.32em;
+  margin: 0;
+  background: rgba(238, 241, 248, 0.22);
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .boot-logo p {
@@ -171,6 +196,43 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.wallpaper-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wp-jarvis-boot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0a0e17 60%, #050810 100%);
+  overflow: hidden;
+}
+
+.wp-jarvis-boot .boot-glow {
+  animation-duration: calc(5.2s / var(--wp-speed, 1));
+}
+
+.wp-jarvis-boot .wallpaper-brand-content {
+  position: relative;
+  z-index: 1;
+}
+
+.visionos-logo-3d-wrap {
+  display: block;
+  overflow: visible;
+  margin: 0 auto;
+}
+
+.visionos-logo-3d {
+  display: block;
+  filter:
+    drop-shadow(0 0 10px rgba(46, 200, 255, 0.35))
+    drop-shadow(0 0 24px rgba(46, 200, 255, 0.2));
 }
 
 .wallpaper-dim {
@@ -399,8 +461,11 @@ body {
 }
 
 .start-icon {
-  color: var(--accent);
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
 }
 
 .taskbar-apps {
@@ -512,8 +577,11 @@ body {
 }
 
 .start-menu-logo {
-  font-size: 32px;
-  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
 }
 
 .start-menu-header strong {
@@ -899,9 +967,10 @@ body {
 }
 
 .shutdown-icon {
-  font-size: 40px;
-  color: #ff8aa8;
-  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
 }
 
 .shutdown-content h2 {
@@ -1062,9 +1131,8 @@ body {
 }
 
 .welcome-icon {
-  font-size: 48px;
-  color: var(--accent);
-  display: block;
+  display: flex;
+  justify-content: center;
   margin-bottom: 12px;
 }
 
@@ -1304,8 +1372,8 @@ body {
 }
 
 .about-logo {
-  font-size: 52px;
-  color: var(--accent);
+  display: flex;
+  justify-content: center;
   margin-bottom: 8px;
 }
 

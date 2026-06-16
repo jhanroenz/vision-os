@@ -4,6 +4,7 @@
   import { startMenuOpen, hideStartMenu } from '$lib/stores/os';
   import { dialogConfirm } from '$lib/stores/dialogs';
   import { exitVisionOS } from '$lib/platform/exit';
+  import VisionOSLogo from '$lib/components/branding/VisionOSLogo.svelte';
 
   function launch(appId: string) {
     openApp(appId);
@@ -30,7 +31,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="start-menu" onclick={(e) => e.stopPropagation()}>
     <header class="start-menu-header">
-      <span class="start-menu-logo">◎</span>
+      <span class="start-menu-logo"><VisionOSLogo size={38} /></span>
       <div>
         <strong>VisionOS</strong>
         <small>Welcome, {$settings.username}</small>

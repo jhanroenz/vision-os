@@ -1,5 +1,6 @@
 export type WallpaperCategory = 'static' | 'animated';
-export type WallpaperType = 'gradient' | 'css' | 'canvas';
+export type WallpaperType = 'gradient' | 'css' | 'canvas' | 'scene';
+export type WallpaperScene = 'jarvis-boot';
 export type CanvasRenderer =
   | 'starfield'
   | 'particles'
@@ -17,6 +18,7 @@ export interface WallpaperDefinition {
   css?: string;
   cssClass?: string;
   renderer?: CanvasRenderer;
+  scene?: WallpaperScene;
 }
 
 export const WALLPAPER_CATALOG: WallpaperDefinition[] = [
@@ -99,6 +101,14 @@ export const WALLPAPER_CATALOG: WallpaperDefinition[] = [
     type: 'css',
     cssClass: 'wp-synthwave',
     preview: 'linear-gradient(180deg, #1a0a2e, #ff2a6d)'
+  },
+  {
+    id: 'jarvis-holo',
+    name: 'Jarvis Holo',
+    category: 'animated',
+    type: 'scene',
+    scene: 'jarvis-boot',
+    preview: 'radial-gradient(ellipse at 50% 38%, #1a3a5c 0%, #0a0e17 45%, #050810 100%)'
   },
   {
     id: 'starfield',

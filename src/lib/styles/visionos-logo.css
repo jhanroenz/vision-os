@@ -1,0 +1,90 @@
+.visionos-logo {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+  filter: drop-shadow(0 0 8px rgba(46, 200, 255, 0.45));
+}
+
+.visionos-logo--animated .visionos-logo-wire {
+  transform-origin: 50px 50px;
+  animation: visionosLogoSpin 18s linear infinite;
+}
+
+.visionos-logo--animated .visionos-logo-halo {
+  animation: visionosLogoPulse 3.2s ease-in-out infinite;
+}
+
+.visionos-logo--animated .visionos-logo-nodes circle {
+  animation: visionosLogoNodePulse 2.4s ease-in-out infinite;
+}
+
+.visionos-logo--animated .visionos-logo-nodes circle:nth-child(odd) {
+  animation-delay: 0.35s;
+}
+
+/* Boot screen: Tony Stark hologram breathe + faster spin */
+.visionos-logo--boot {
+  transform-origin: center center;
+  animation: visionosLogoHoloBreath 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.visionos-logo--boot.visionos-logo--animated .visionos-logo-wire {
+  animation: visionosLogoSpin 10s linear infinite;
+}
+
+.visionos-logo--boot.visionos-logo--animated .visionos-logo-halo {
+  animation: visionosLogoHoloCore 2.6s ease-in-out infinite;
+}
+
+@keyframes visionosLogoHoloBreath {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.82;
+    filter:
+      drop-shadow(0 0 10px rgba(46, 200, 255, 0.35))
+      drop-shadow(0 0 24px rgba(46, 200, 255, 0.15));
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+    filter:
+      drop-shadow(0 0 22px rgba(95, 228, 255, 0.75))
+      drop-shadow(0 0 48px rgba(46, 200, 255, 0.45))
+      drop-shadow(0 0 72px rgba(0, 120, 255, 0.2));
+  }
+}
+
+@keyframes visionosLogoHoloCore {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+@keyframes visionosLogoSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes visionosLogoPulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+@keyframes visionosLogoNodePulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+.boot-logo-mark .visionos-logo,
+.shutdown-ring .visionos-logo {
+  filter: drop-shadow(0 0 14px rgba(46, 200, 255, 0.55));
+}
+
+.start-icon .visionos-logo,
+.start-menu-logo .visionos-logo {
+  display: block;
+}
+
+.welcome-icon .visionos-logo,
+.about-logo .visionos-logo {
+  margin: 0 auto;
+}
