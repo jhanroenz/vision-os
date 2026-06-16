@@ -1,0 +1,9 @@
+{
+  "vue-todo": {
+    "description": "Vue 3 todo list UI for create-vue default layout (src/App.vue)",
+    "files": {
+      "src/App.vue": "App.vue"
+    },
+    "post": []
+  }
+}
