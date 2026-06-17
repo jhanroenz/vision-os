@@ -1,8 +1,8 @@
 import path from "node:path";
 import {
-  defaultWorkspaceDir,
   resolveDataDir,
   resolveVisionRoot,
+  resolveWorkspaceDir,
 } from "./paths.js";
 import { PACKAGED_PORTS, packagedSearxngBase } from "./ports.js";
 import { loadVisionEnv } from "./dotenvLoad.js";
@@ -81,12 +81,7 @@ export const config = {
     process.env.CONVERSATIONS_DIR ??
       path.join(dataDir, "conversations"),
   ),
-  workspaceDir: path.resolve(
-    process.env.WORKSPACE_DIR ??
-      (process.env.VISIONOS_PACKAGED === "true"
-        ? defaultWorkspaceDir(dataDir)
-        : path.join(rootDir, "../..")),
-  ),
+  workspaceDir: resolveWorkspaceDir(dataDir),
   workspaceFileMap: {
     maxDepth: Number(process.env.WORKSPACE_FILE_MAP_MAX_DEPTH ?? 12),
     maxFiles: Number(process.env.WORKSPACE_FILE_MAP_MAX_FILES ?? 500),

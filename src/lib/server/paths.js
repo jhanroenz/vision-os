@@ -49,6 +49,27 @@ export function defaultWorkspaceDir(dataDir) {
   return path.join(os.homedir(), 'VisionOS', 'workspace');
 }
 
+/** True for paths like `D:\`, `C:\`, or `/` that must not be used as workspace roots. */
+export function isDriveOrFilesystemRoot(dir) {
+  const resolved = path.resolve(String(dir ?? ''));
+  const parsed = path.parse(resolved);
+  if (parsed.root) {
+    const normalized = resolved.replace(/\\/g, '/').replace(/\/+$/, '') || '/';
+    const root = parsed.root.replace(/\\/g, '/').replace(/\/+$/, '') || '/';
+    if (normalized === root) return true;
+  }
+  return resolved === '/';
+}
+
+/** Writable agent workspace — env override, else ~/VisionOS/workspace on all platforms. */
+export function resolveWorkspaceDir(dataDir = resolveDataDir()) {
+  if (process.env.WORKSPACE_DIR) {
+    const fromEnv = path.resolve(process.env.WORKSPACE_DIR);
+    if (!isDriveOrFilesystemRoot(fromEnv)) return fromEnv;
+  }
+  return defaultWorkspaceDir(dataDir);
+}
+
 export function isPackaged() {
   return process.env.VISIONOS_PACKAGED === 'true';
 }
