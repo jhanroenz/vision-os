@@ -1,6 +1,21 @@
+import { PACKAGED_BACKEND_PORT } from '$lib/config/packaged';
+
 /** True when running inside the Tauri desktop shell. */
+export function isTauriShell(): boolean {
+  if (typeof window === 'undefined') return false;
+  if ('__TAURI_INTERNALS__' in window) return true;
+  if ('__TAURI__' in window) return true;
+  // Packaged builds load the UI from the bundled Node backend URL.
+  return (
+    window.location.protocol === 'http:' &&
+    window.location.hostname === '127.0.0.1' &&
+    window.location.port === String(PACKAGED_BACKEND_PORT)
+  );
+}
+
+/** @deprecated Use isTauriShell */
 export function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+  return isTauriShell();
 }
 
 /**
@@ -11,7 +26,7 @@ export async function openBrowserWindow(
   url: string,
   title = 'Browser'
 ): Promise<'webview' | 'tab' | 'failed'> {
-  if (isTauri()) {
+  if (isTauriShell()) {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('open_browser_window', { url, title });

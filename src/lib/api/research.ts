@@ -1,3 +1,5 @@
+import { apiFetch, resolveApiUrl } from './http.js';
+
 export type ResearchTier = 'quick' | 'standard' | 'deep' | 'exhaustive';
 
 export interface ResearchSessionSummary {
@@ -42,34 +44,21 @@ export interface ResearchEvent {
   [key: string]: unknown;
 }
 
-async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message =
-      data && typeof data === 'object' && 'error' in data
-        ? String((data as { error: string }).error)
-        : `Request failed (${response.status})`;
-    throw new Error(message);
-  }
-  return data as T;
-}
-
 export async function listResearchSessions(): Promise<ResearchSessionSummary[]> {
-  const data = await api<{ sessions: ResearchSessionSummary[] }>('/api/research');
+  const data = await apiFetch<{ sessions: ResearchSessionSummary[] }>('/api/research');
   return data.sessions ?? [];
 }
 
 export async function getResearchSession(id: string): Promise<ResearchSessionDetail> {
-  return api(`/api/research/${encodeURIComponent(id)}`);
+  return apiFetch(`/api/research/${encodeURIComponent(id)}`);
 }
 
 export async function deleteResearchSession(id: string): Promise<{ ok: true }> {
-  return api(`/api/research/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return apiFetch(`/api/research/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 export async function updateResearchSessionTitle(id: string, title: string): Promise<{ id: string; title: string }> {
-  return api(`/api/research/${encodeURIComponent(id)}`, {
+  return apiFetch(`/api/research/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title })
@@ -84,7 +73,7 @@ export async function streamResearch(
     onError?: (message: string) => void;
   }
 ): Promise<void> {
-  const response = await fetch('/api/research/stream', {
+  const response = await fetch(resolveApiUrl('/api/research/stream'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)

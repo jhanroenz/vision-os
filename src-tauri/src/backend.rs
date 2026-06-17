@@ -63,6 +63,25 @@ fn append_log(path: &Path, line: &str) {
     }
 }
 
+fn prepend_node_to_path(cmd: &mut Command, resource_dir: &Path) {
+    let node_dir = if cfg!(target_os = "windows") {
+        resource_dir.join("node")
+    } else {
+        resource_dir.join("node").join("bin")
+    };
+    if !node_dir.is_dir() {
+        return;
+    }
+    let sep = if cfg!(target_os = "windows") { ";" } else { ":" };
+    let current = std::env::var("PATH").unwrap_or_default();
+    let merged = if current.is_empty() {
+        node_dir.display().to_string()
+    } else {
+        format!("{}{}{}", node_dir.display(), sep, current)
+    };
+    cmd.env("PATH", merged);
+}
+
 /** Keep OS basics for child processes; drop inherited API keys and dev `.env` leakage. */
 fn apply_isolated_runtime_env(cmd: &mut Command) {
     cmd.env_clear();
@@ -133,6 +152,7 @@ fn spawn_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> 
 
     let mut child_cmd = Command::new(&python);
     apply_isolated_runtime_env(&mut child_cmd);
+    prepend_node_to_path(&mut child_cmd, resource_dir);
     let child = child_cmd
         .arg("-m")
         .arg("searx.webapp")
@@ -224,6 +244,7 @@ pub fn start_packaged_backend(app: &AppHandle) -> Result<(), String> {
 
     let mut node_cmd = Command::new(&node);
     apply_isolated_runtime_env(&mut node_cmd);
+    prepend_node_to_path(&mut node_cmd, &resource_dir);
     let mut node_child = node_cmd
         .arg(&server_js)
         .current_dir(resource_dir.join("server"))
@@ -287,9 +308,16 @@ pub fn navigate_main_window(app: &AppHandle, port: u16) -> Result<(), String> {
         .ok_or_else(|| "Main window not found".to_string())?;
 
     let url = format!("http://127.0.0.1:{port}/");
-    window
-        .navigate(Url::parse(&url).map_err(|e| e.to_string())?)
-        .map_err(|e| e.to_string())?;
+    let parsed = Url::parse(&url).map_err(|e| e.to_string())?;
+
+    if let Err(e) = window.navigate(parsed.clone()) {
+        log::warn!("window.navigate failed ({e}); falling back to location.replace");
+        let escaped = url.replace('\\', "\\\\").replace('\'', "\\'");
+        window
+            .eval(&format!("window.location.replace('{escaped}')"))
+            .map_err(|e| e.to_string())?;
+    }
+
     window.show().map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())?;
     Ok(())

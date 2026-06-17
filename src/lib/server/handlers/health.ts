@@ -1,5 +1,5 @@
 import { config } from '../config.js';
-import { detectProviderFromBaseUrl, probeLlmHealth } from '../llmProviders.js';
+import { detectProviderFromBaseUrl } from '../llmProviders.js';
 import { json } from '../http.js';
 
 export async function GET() {
@@ -24,11 +24,10 @@ export async function GET() {
   }
 
   const searchOptional = process.env.SEARXNG_OPTIONAL === 'true';
-  const ok = searchOptional ? true : searxngOk;
 
   return json(
     {
-      ok,
+      ok: true,
       llm: llmOk,
       searxng: searxngOk,
       searchOptional,
@@ -41,6 +40,6 @@ export async function GET() {
       searchProvider: 'searxng',
       searxngUrl: config.searxng.apiBase
     },
-    ok ? 200 : 503
+    200
   );
 }

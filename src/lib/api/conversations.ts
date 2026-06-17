@@ -1,3 +1,5 @@
+import { apiFetch } from './http.js';
+
 export interface ConversationListItem {
   id: string;
   title: string;
@@ -28,30 +30,17 @@ export interface ConversationDetail {
   uiMessages: UiMessage[];
 }
 
-async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message =
-      data && typeof data === 'object' && 'error' in data
-        ? String((data as { error: string }).error)
-        : `Request failed (${response.status})`;
-    throw new Error(message);
-  }
-  return data as T;
-}
-
 export async function listConversations(): Promise<ConversationListItem[]> {
-  const data = await api<{ conversations: ConversationListItem[] }>('/api/conversations');
+  const data = await apiFetch<{ conversations: ConversationListItem[] }>('/api/conversations');
   return data.conversations ?? [];
 }
 
 export async function createConversation(): Promise<ConversationDetail> {
-  return api('/api/conversations', { method: 'POST' });
+  return apiFetch('/api/conversations', { method: 'POST' });
 }
 
 export async function getConversation(id: string): Promise<ConversationDetail> {
-  return api(`/api/conversations/${encodeURIComponent(id)}`);
+  return apiFetch(`/api/conversations/${encodeURIComponent(id)}`);
 }
 
 export async function activateConversation(id: string): Promise<{
@@ -60,7 +49,7 @@ export async function activateConversation(id: string): Promise<{
   workspaceRoot?: string;
   workspaceRootSource?: string;
 }> {
-  return api(`/api/conversations/${encodeURIComponent(id)}/activate`, { method: 'POST' });
+  return apiFetch(`/api/conversations/${encodeURIComponent(id)}/activate`, { method: 'POST' });
 }
 
 export async function compactConversation(id: string): Promise<{
@@ -68,14 +57,14 @@ export async function compactConversation(id: string): Promise<{
   summary?: string;
   context?: unknown;
 }> {
-  return api(`/api/conversations/${encodeURIComponent(id)}/compact`, { method: 'POST' });
+  return apiFetch(`/api/conversations/${encodeURIComponent(id)}/compact`, { method: 'POST' });
 }
 
 export async function updateConversation(
   id: string,
   patch: { title?: string; workspaceRoot?: string }
 ): Promise<ConversationDetail> {
-  return api(`/api/conversations/${encodeURIComponent(id)}`, {
+  return apiFetch(`/api/conversations/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(patch)
@@ -83,5 +72,5 @@ export async function updateConversation(
 }
 
 export async function deleteConversation(id: string): Promise<{ ok: true }> {
-  return api(`/api/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return apiFetch(`/api/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
