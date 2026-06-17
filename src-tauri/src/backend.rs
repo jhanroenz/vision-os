@@ -523,10 +523,9 @@ pub fn navigate_main_window(app: &AppHandle, port: u16) -> Result<(), String> {
         .ok_or_else(|| "Main window not found".to_string())?;
 
     emit_boot_progress(app, 100, "Welcome to VisionOS", None);
-    let _ = window.eval(
-        "window.visionOSBoot?.complete?.(); sessionStorage.setItem('visionos-boot-complete','1');",
-    );
-    std::thread::sleep(Duration::from_millis(400));
+    std::thread::sleep(Duration::from_millis(1000));
+    let _ = window.eval("window.visionOSBoot?.complete?.();");
+    std::thread::sleep(Duration::from_millis(500));
 
     let url = format!("http://127.0.0.1:{port}/");
     let parsed = Url::parse(&url).map_err(|e| e.to_string())?;

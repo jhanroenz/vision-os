@@ -7,7 +7,12 @@
   import DialogHost from '$lib/components/DialogHost.svelte';
   import ShutdownScreen from '$lib/components/ShutdownScreen.svelte';
   import { booted, shutdown, hideStartMenu, hideContextMenu } from '$lib/stores/os';
+  import { isTauriShell } from '$lib/platform/browser';
   import { onMount } from 'svelte';
+
+  if (typeof window !== 'undefined' && isTauriShell()) {
+    booted.set(true);
+  }
 
   onMount(() => {
     const onGlobalClick = () => {
@@ -22,7 +27,9 @@
 {#if $shutdown}
   <ShutdownScreen />
 {:else if !$booted}
-  <BootScreen />
+  {#if typeof window === 'undefined' || !isTauriShell()}
+    <BootScreen />
+  {/if}
 {:else}
   <Desktop />
   <Taskbar />

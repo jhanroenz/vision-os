@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { booted } from '$lib/stores/os';
-  import JarvisBootBrand from '$lib/components/branding/JarvisBootBrand.svelte';
-  import JarvisHoloConstellations from '$lib/components/branding/JarvisHoloConstellations.svelte';
+  import BootScreenView from '$lib/components/BootScreenView.svelte';
 
   const statuses = [
     'Initializing neural core...',
@@ -19,12 +18,6 @@
   let fading = $state(false);
 
   onMount(() => {
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('visionos-boot-complete') === '1') {
-      sessionStorage.removeItem('visionos-boot-complete');
-      booted.set(true);
-      return;
-    }
-
     const start = performance.now();
     const duration = 2800;
 
@@ -41,7 +34,7 @@
         requestAnimationFrame(tick);
       } else {
         fading = true;
-        setTimeout(() => booted.set(true), 500);
+        setTimeout(() => booted.set(true), 1000);
       }
     };
 
@@ -49,14 +42,4 @@
   });
 </script>
 
-<div class="boot" class:fade-out={fading}>
-  <div class="boot-glow"></div>
-  <JarvisHoloConstellations />
-  <div class="boot-content">
-    <JarvisBootBrand logo3d />
-    <div class="boot-progress">
-      <div class="boot-progress-bar" style="width: {progress}%"></div>
-    </div>
-    <p class="boot-status">{status}</p>
-  </div>
-</div>
+<BootScreenView {progress} {status} {fading} />

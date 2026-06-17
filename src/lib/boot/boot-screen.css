@@ -1,0 +1,184 @@
+:root {
+  --accent: #6c5ce7;
+  --text: #eef1f8;
+  --text-muted: #8b95a8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #070a12;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0a0e17 60%, #050810 100%);
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+
+.boot.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot-glow {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(46, 200, 255, 0.4) 0%, rgba(0, 80, 170, 0.12) 45%, transparent 72%);
+  filter: blur(64px);
+  animation: bootHoloBreath 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  z-index: 0;
+}
+
+.jarvis-holo-constellations {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bootHoloBreath {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.88);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.28);
+  }
+}
+
+.boot-content {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+}
+
+.boot-logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  min-height: 104px;
+}
+
+.boot-logo h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  font-size: 38px;
+  font-weight: 200;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.boot-logo-word {
+  letter-spacing: 6px;
+}
+
+.boot-logo-word:first-of-type {
+  margin-right: -6px;
+  padding-right: 0.22em;
+}
+
+.boot-logo-word:last-of-type {
+  padding-left: 0.22em;
+}
+
+.boot-logo-sep {
+  display: inline-block;
+  width: 1px;
+  height: 1.32em;
+  margin: 0;
+  background: rgba(238, 241, 248, 0.22);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.boot-logo p {
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.visionos-logo-3d-wrap {
+  display: block;
+  overflow: visible;
+  margin: 0 auto;
+}
+
+.visionos-logo-3d {
+  display: block;
+  filter:
+    drop-shadow(0 0 10px rgba(46, 200, 255, 0.35))
+    drop-shadow(0 0 24px rgba(46, 200, 255, 0.2));
+}
+
+.boot-progress {
+  width: 300px;
+  height: 3px;
+  margin: 40px auto 0;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.boot-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), #a29bfe, var(--accent));
+  background-size: 200% 100%;
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.boot-status {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+}
+
+.boot-detail {
+  margin-top: 8px;
+  color: rgba(139, 149, 168, 0.75);
+  font-size: 11px;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  min-height: 1.2em;
+}

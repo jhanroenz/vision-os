@@ -175,6 +175,14 @@ body {
   font-family: 'Cascadia Code', 'Fira Code', monospace;
 }
 
+.boot-detail {
+  margin-top: 8px;
+  color: rgba(139, 149, 168, 0.75);
+  font-size: 11px;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  min-height: 1.2em;
+}
+
 /* ── Desktop ────────────────────────────────────────── */
 
 .desktop {

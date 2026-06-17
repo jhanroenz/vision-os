@@ -27,7 +27,8 @@
         "prepare:searxng-python": "node scripts/prepare-searxng-python.mjs",
         "vendor:searxng": "node scripts/vendor-searxng.mjs",
         "prepare:searxng-image": "node scripts/bundle-searxng-image.mjs",
-        "prepare:release": "npm run prepare:bundle && npm run prepare:node && npm run prepare:python && npm run prepare:searxng-python",
+        "build:startup-boot": "node scripts/build-startup-boot.mjs",
+        "prepare:release": "npm run prepare:bundle && npm run prepare:node && npm run prepare:python && npm run prepare:searxng-python && npm run build:startup-boot",
         "prepare:release:full": "npm run prepare:release",
         "icons": "tauri icon src-tauri/app-icon.svg -o src-tauri/icons && node scripts/copy-icons.mjs"
     },

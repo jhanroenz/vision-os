@@ -5,149 +5,455 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VisionOS</title>
   <style>
-    :root {
-      --accent: #6c5ce7;
-      --text: #eef1f8;
-      --text-muted: #8b95a8;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #070a12;
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-    }
-    .boot {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0a0e17 60%, #050810 100%);
-      transition: opacity 0.45s ease, visibility 0.45s;
-    }
-    .boot.fade-out { opacity: 0; visibility: hidden; pointer-events: none; }
-    .boot-glow {
-      position: absolute;
-      width: 520px;
-      height: 520px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(46, 200, 255, 0.4) 0%, rgba(0, 80, 170, 0.12) 45%, transparent 72%);
-      filter: blur(64px);
-      animation: bootHoloBreath 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-      z-index: 0;
-    }
-    .jarvis-holo-constellations {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 0;
-    }
-    @keyframes bootHoloBreath {
-      0%, 100% { opacity: 0.35; transform: scale(0.88); }
-      50% { opacity: 0.8; transform: scale(1.28); }
-    }
-    .boot-content { position: relative; text-align: center; z-index: 1; }
-    .boot-logo-mark {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 24px;
-      min-height: 104px;
-    }
-    .visionos-logo { display: block; filter: drop-shadow(0 0 10px rgba(46, 200, 255, 0.35)) drop-shadow(0 0 24px rgba(46, 200, 255, 0.2)); }
-    .boot-logo h1 {
-      display: inline-flex;
-      align-items: center;
-      font-size: 38px;
-      font-weight: 200;
-      text-transform: uppercase;
-    }
-    .boot-logo-word { letter-spacing: 6px; }
-    .boot-logo-word:first-of-type { margin-right: -6px; padding-right: 0.22em; }
-    .boot-logo-word:last-of-type { padding-left: 0.22em; }
-    .boot-logo-sep {
-      display: inline-block;
-      width: 1px;
-      height: 1.32em;
-      background: rgba(238, 241, 248, 0.22);
-      flex-shrink: 0;
-    }
-    .boot-logo p { color: var(--text-muted); margin-top: 8px; font-size: 14px; }
-    .boot-progress {
-      width: 300px;
-      height: 3px;
-      margin: 40px auto 0;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .boot-progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--accent), #a29bfe, var(--accent));
-      background-size: 200% 100%;
-      border-radius: 2px;
-      transition: width 0.2s ease-out;
-      animation: shimmer 2s linear infinite;
-    }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    .boot-status {
-      margin-top: 16px;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
-    }
-    .boot-detail {
-      margin-top: 8px;
-      color: rgba(139, 149, 168, 0.75);
-      font-size: 11px;
-      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
-      min-height: 1.2em;
-    }
+:root {
+  --accent: #6c5ce7;
+  --text: #eef1f8;
+  --text-muted: #8b95a8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #070a12;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0a0e17 60%, #050810 100%);
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+
+.boot.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot-glow {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(46, 200, 255, 0.4) 0%, rgba(0, 80, 170, 0.12) 45%, transparent 72%);
+  filter: blur(64px);
+  animation: bootHoloBreath 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  z-index: 0;
+}
+
+.jarvis-holo-constellations {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bootHoloBreath {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.88);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.28);
+  }
+}
+
+.boot-content {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+}
+
+.boot-logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  min-height: 104px;
+}
+
+.boot-logo h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  font-size: 38px;
+  font-weight: 200;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.boot-logo-word {
+  letter-spacing: 6px;
+}
+
+.boot-logo-word:first-of-type {
+  margin-right: -6px;
+  padding-right: 0.22em;
+}
+
+.boot-logo-word:last-of-type {
+  padding-left: 0.22em;
+}
+
+.boot-logo-sep {
+  display: inline-block;
+  width: 1px;
+  height: 1.32em;
+  margin: 0;
+  background: rgba(238, 241, 248, 0.22);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.boot-logo p {
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.visionos-logo-3d-wrap {
+  display: block;
+  overflow: visible;
+  margin: 0 auto;
+}
+
+.visionos-logo-3d {
+  display: block;
+  filter:
+    drop-shadow(0 0 10px rgba(46, 200, 255, 0.35))
+    drop-shadow(0 0 24px rgba(46, 200, 255, 0.2));
+}
+
+.boot-progress {
+  width: 300px;
+  height: 3px;
+  margin: 40px auto 0;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.boot-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), #a29bfe, var(--accent));
+  background-size: 200% 100%;
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.boot-status {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+}
+
+.boot-detail {
+  margin-top: 8px;
+  color: rgba(139, 149, 168, 0.75);
+  font-size: 11px;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  min-height: 1.2em;
+}
+
   </style>
 </head>
 <body>
+  <script>
+"use strict";
+(() => {
+  // src/lib/boot/holo-constellations.ts
+  function initHoloConstellations(canvas, options = {}) {
+    const parent = canvas.parentElement;
+    if (!parent) {
+      return { destroy: () => {
+      } };
+    }
+    const motes = [];
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const reducedMotion = options.reducedMotion ?? window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const animSpeed = reducedMotion ? 0.35 : options.speed ?? 1;
+    let raf = 0;
+    let w = 0;
+    let h = 0;
+    let last = 0;
+    const seedMotes = () => {
+      motes.length = 0;
+      for (let i = 0; i < 48; i++) {
+        motes.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.12,
+          vy: (Math.random() - 0.5) * 0.12,
+          size: Math.random() * 1.4 + 0.4,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    };
+    const resize = () => {
+      const rect = parent.getBoundingClientRect();
+      w = Math.max(1, Math.round(rect.width));
+      h = Math.max(1, Math.round(rect.height));
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      if (motes.length === 0) seedMotes();
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(parent);
+    const tick = (time) => {
+      const delta = (last ? time - last : 16) * animSpeed;
+      last = time;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const scale = delta / 16;
+      for (const m of motes) {
+        m.x += m.vx * scale;
+        m.y += m.vy * scale;
+        m.phase += delta * 3e-3;
+        if (m.x < 0) m.x = w;
+        if (m.x > w) m.x = 0;
+        if (m.y < 0) m.y = h;
+        if (m.y > h) m.y = 0;
+        const twinkle = 0.25 + Math.sin(m.phase) * 0.35;
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(120, 220, 255, ${twinkle})`;
+        ctx.fill();
+      }
+      for (let i = 0; i < motes.length; i++) {
+        for (let j = i + 1; j < motes.length; j++) {
+          const a = motes[i];
+          const b = motes[j];
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          if (dist > 90) continue;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(74, 216, 255, ${0.06 * (1 - dist / 90)})`;
+          ctx.stroke();
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return {
+      destroy: () => {
+        cancelAnimationFrame(raf);
+        ro.disconnect();
+      }
+    };
+  }
+
+  // src/lib/components/branding/sphereMesh3d.ts
+  function normalize(v) {
+    const len = Math.hypot(v.x, v.y, v.z) || 1;
+    return { x: v.x / len, y: v.y / len, z: v.z / len };
+  }
+  function rotateX(v, angle) {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    return { x: v.x, y: v.y * c - v.z * s, z: v.y * s + v.z * c };
+  }
+  function rotateY(v, angle) {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    return { x: v.x * c + v.z * s, y: v.y, z: -v.x * s + v.z * c };
+  }
+  function rotateZ(v, angle) {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    return { x: v.x * c - v.y * s, y: v.x * s + v.y * c, z: v.z };
+  }
+  function createSphereWireframe(latBands = 8, lonBands = 14) {
+    const vertices = [];
+    const index = (lat, lon) => lat * lonBands + lon % lonBands;
+    for (let lat = 0; lat <= latBands; lat++) {
+      const v = lat / latBands;
+      const theta = v * Math.PI;
+      const y = Math.cos(theta);
+      const ringR = Math.sin(theta);
+      for (let lon = 0; lon < lonBands; lon++) {
+        const phi = lon / lonBands * Math.PI * 2;
+        vertices.push(
+          normalize({
+            x: ringR * Math.cos(phi),
+            y,
+            z: ringR * Math.sin(phi)
+          })
+        );
+      }
+    }
+    const edgeSet = /* @__PURE__ */ new Set();
+    const edges = [];
+    function addEdge(a, b) {
+      if (a === b) return;
+      const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+      if (edgeSet.has(key)) return;
+      edgeSet.add(key);
+      edges.push([a, b]);
+    }
+    for (let lat = 0; lat <= latBands; lat++) {
+      for (let lon = 0; lon < lonBands; lon++) {
+        const i = index(lat, lon);
+        addEdge(i, index(lat, lon + 1));
+        if (lat < latBands) {
+          addEdge(i, index(lat + 1, lon));
+        }
+      }
+    }
+    return { vertices, edges };
+  }
+  function projectVertex(v, cx, cy, radius, focal = 2.8) {
+    const depth = focal + v.z;
+    const scale = focal / Math.max(0.35, depth);
+    return {
+      x: cx + v.x * radius * scale,
+      y: cy + v.y * radius * scale,
+      z: v.z,
+      scale
+    };
+  }
+
+  // src/lib/boot/logo3d-canvas.ts
+  function initLogo3dCanvas(canvas, options = {}) {
+    const size = options.size ?? 88;
+    const canvasPad = 1.58;
+    const canvasSize = Math.round(size * canvasPad);
+    const reducedMotion = options.reducedMotion ?? window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const animSpeed = reducedMotion ? 0.35 : options.speed ?? 1;
+    const mesh = createSphereWireframe(9, 16);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let raf = 0;
+    const resize = () => {
+      canvas.width = Math.round(canvasSize * dpr);
+      canvas.height = Math.round(canvasSize * dpr);
+      canvas.style.width = `${canvasSize}px`;
+      canvas.style.height = `${canvasSize}px`;
+    };
+    resize();
+    const tick = (time) => {
+      const t = time * animSpeed;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      const cx = canvasSize / 2;
+      const cy = canvasSize / 2;
+      const radius = size * 0.51 * 1.03;
+      const rotY = t * 55e-5;
+      const rotX = 0.62 + Math.sin(t * 25e-5) * 0.12;
+      const rotZ = Math.sin(t * 14e-5) * 0.08;
+      const halo = ctx.createRadialGradient(cx, cy, radius * 0.05, cx, cy, radius * 1.35);
+      halo.addColorStop(0, "rgba(95, 228, 255, 0.23)");
+      halo.addColorStop(0.5, "rgba(46, 200, 255, 0.08)");
+      halo.addColorStop(1, "transparent");
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 1.35, 0, Math.PI * 2);
+      ctx.fill();
+      const transformed = mesh.vertices.map((v) => {
+        let p = v;
+        p = rotateX(p, rotX);
+        p = rotateY(p, rotY);
+        p = rotateZ(p, rotZ);
+        return projectVertex(p, cx, cy, radius);
+      });
+      const sortedEdges = [...mesh.edges].sort((a, b) => {
+        const za = (transformed[a[0]].z + transformed[a[1]].z) * 0.5;
+        const zb = (transformed[b[0]].z + transformed[b[1]].z) * 0.5;
+        return za - zb;
+      });
+      ctx.lineCap = "round";
+      for (const [a, b] of sortedEdges) {
+        const pa = transformed[a];
+        const pb = transformed[b];
+        const depth = (pa.z + pb.z) * 0.5;
+        const alpha = 0.28 + (depth + 1) * 0.32;
+        ctx.strokeStyle = `rgba(95, 228, 255, ${Math.min(0.92, alpha)})`;
+        ctx.lineWidth = Math.max(0.55, 0.85 * ((pa.scale + pb.scale) * 0.5));
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+        ctx.stroke();
+      }
+      const sortedVerts = transformed.map((p, i) => ({ ...p, i })).sort((a, b) => a.z - b.z);
+      for (const p of sortedVerts) {
+        const alpha = 0.45 + (p.z + 1) * 0.28;
+        const nr = Math.max(0.75, 1.35 * p.scale);
+        const ng = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, nr * 2);
+        ng.addColorStop(0, `rgba(255, 255, 255, ${0.95 * alpha})`);
+        ng.addColorStop(0.45, `rgba(142, 233, 255, ${0.65 * alpha})`);
+        ng.addColorStop(1, "transparent");
+        ctx.fillStyle = ng;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, nr * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(230, 250, 255, ${0.92 * alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, nr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return {
+      destroy: () => {
+        cancelAnimationFrame(raf);
+      }
+    };
+  }
+
+  // src/lib/boot/startup-boot.ts
+  function bootMarkup() {
+    return `
   <div class="boot" id="boot">
     <div class="boot-glow"></div>
     <canvas class="jarvis-holo-constellations" id="holo" aria-hidden="true"></canvas>
     <div class="boot-content">
       <div class="boot-logo">
         <div class="boot-logo-mark">
-          <svg class="visionos-logo" width="88" height="88" viewBox="0 0 100 100" aria-label="VisionOS">
-            <defs>
-              <radialGradient id="vos-glow" cx="50%" cy="45%" r="55%">
-                <stop offset="0%" stop-color="#b8f7ff" stop-opacity="0.55" />
-                <stop offset="45%" stop-color="#2ec8ff" stop-opacity="0.22" />
-                <stop offset="100%" stop-color="#0050aa" stop-opacity="0" />
-              </radialGradient>
-              <radialGradient id="vos-node" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#ffffff" />
-                <stop offset="55%" stop-color="#8ee9ff" />
-                <stop offset="100%" stop-color="#1aa8ff" stop-opacity="0.8" />
-              </radialGradient>
-            </defs>
-            <circle cx="50" cy="50" r="44" fill="url(#vos-glow)" />
-            <g opacity="0.9">
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#5fe4ff" stroke-width="0.9" />
-              <ellipse cx="50" cy="50" rx="40" ry="11" fill="none" stroke="#4ad8ff" stroke-width="0.75" />
-              <ellipse cx="50" cy="50" rx="40" ry="11" fill="none" stroke="#4ad8ff" stroke-width="0.75" transform="rotate(60 50 50)" />
-              <ellipse cx="50" cy="50" rx="40" ry="11" fill="none" stroke="#4ad8ff" stroke-width="0.75" transform="rotate(120 50 50)" />
-              <ellipse cx="50" cy="50" rx="11" ry="40" fill="none" stroke="#4ad8ff" stroke-width="0.7" />
-              <ellipse cx="50" cy="50" rx="11" ry="40" fill="none" stroke="#4ad8ff" stroke-width="0.7" transform="rotate(60 50 50)" />
-            </g>
-            <circle cx="50" cy="50" r="2.6" fill="url(#vos-node)" />
-            <circle cx="50" cy="10" r="2.4" fill="url(#vos-node)" />
-            <circle cx="50" cy="90" r="2.4" fill="url(#vos-node)" />
-            <circle cx="10" cy="50" r="2.2" fill="url(#vos-node)" />
-            <circle cx="90" cy="50" r="2.2" fill="url(#vos-node)" />
-          </svg>
+          <div class="visionos-logo-3d-wrap" style="width:139px;height:139px">
+            <canvas class="visionos-logo-3d" id="logo3d" role="img" aria-label="VisionOS"></canvas>
+          </div>
         </div>
         <h1>
           <span class="boot-logo-word">Vision</span>
@@ -159,95 +465,50 @@
       <div class="boot-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressbar">
         <div class="boot-progress-bar" id="progress"></div>
       </div>
-      <p class="boot-status" id="status">Starting VisionOS…</p>
-      <p class="boot-detail" id="detail"></p>
+      <p class="boot-status" id="status">Starting VisionOS\u2026</p>
+      <p class="boot-detail" id="detail">&nbsp;</p>
     </div>
-  </div>
-  <script>
-    (function () {
-      const holo = document.getElementById('holo');
-      const progress = document.getElementById('progress');
-      const progressbar = document.getElementById('progressbar');
-      const status = document.getElementById('status');
-      const detail = document.getElementById('detail');
-      const boot = document.getElementById('boot');
-      const motes = [];
-      let w = 0, h = 0, raf = 0;
-
-      function resizeHolo() {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        w = window.innerWidth;
-        h = window.innerHeight;
-        holo.width = Math.round(w * dpr);
-        holo.height = Math.round(h * dpr);
-        holo.style.width = w + 'px';
-        holo.style.height = h + 'px';
-        if (!motes.length) {
-          for (let i = 0; i < 48; i++) {
-            motes.push({
-              x: Math.random() * w,
-              y: Math.random() * h,
-              vx: (Math.random() - 0.5) * 0.12,
-              vy: (Math.random() - 0.5) * 0.12,
-              size: Math.random() * 1.4 + 0.4,
-              phase: Math.random() * Math.PI * 2
-            });
-          }
+  </div>`;
+  }
+  function mountStartupBoot(root = document.body) {
+    root.innerHTML = bootMarkup();
+    const holo = document.getElementById("holo");
+    const logo3d = document.getElementById("logo3d");
+    const progress = document.getElementById("progress");
+    const progressbar = document.getElementById("progressbar");
+    const status = document.getElementById("status");
+    const detail = document.getElementById("detail");
+    const boot = document.getElementById("boot");
+    if (holo instanceof HTMLCanvasElement) {
+      initHoloConstellations(holo);
+    }
+    if (logo3d instanceof HTMLCanvasElement) {
+      initLogo3dCanvas(logo3d, { size: 88, speed: 1 });
+    }
+    window.visionOSBoot = {
+      update(payload) {
+        const p = Math.max(0, Math.min(100, Number(payload?.progress ?? 0)));
+        if (progress) progress.style.width = `${p}%`;
+        progressbar?.setAttribute("aria-valuenow", String(Math.round(p)));
+        if (payload?.status && status) status.textContent = payload.status;
+        if (detail) {
+          detail.textContent = payload?.detail || "\xA0";
         }
+      },
+      complete() {
+        boot?.classList.add("fade-out");
       }
+    };
+  }
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => mountStartupBoot());
+    } else {
+      mountStartupBoot();
+    }
+  }
+})();
 
-      function drawHolo(time) {
-        const ctx = holo.getContext('2d');
-        if (!ctx) return;
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, w, h);
-        for (const m of motes) {
-          m.x += m.vx;
-          m.y += m.vy;
-          if (m.x < 0) m.x = w;
-          if (m.x > w) m.x = 0;
-          if (m.y < 0) m.y = h;
-          if (m.y > h) m.y = 0;
-          const pulse = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(time * 0.0015 + m.phase));
-          ctx.beginPath();
-          ctx.arc(m.x, m.y, m.size * pulse, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(120, 220, 255, ' + (0.15 + pulse * 0.35) + ')';
-          ctx.fill();
-        }
-        ctx.strokeStyle = 'rgba(90, 200, 255, 0.06)';
-        for (let i = 0; i < motes.length; i++) {
-          for (let j = i + 1; j < motes.length; j++) {
-            const dx = motes[i].x - motes[j].x;
-            const dy = motes[i].y - motes[j].y;
-            if (dx * dx + dy * dy < 10000) {
-              ctx.beginPath();
-              ctx.moveTo(motes[i].x, motes[i].y);
-              ctx.lineTo(motes[j].x, motes[j].y);
-              ctx.stroke();
-            }
-          }
-        }
-        raf = requestAnimationFrame(drawHolo);
-      }
-
-      window.visionOSBoot = {
-        update(payload) {
-          const p = Math.max(0, Math.min(100, Number(payload?.progress ?? 0)));
-          progress.style.width = p + '%';
-          progressbar.setAttribute('aria-valuenow', String(Math.round(p)));
-          if (payload?.status) status.textContent = payload.status;
-          detail.textContent = payload?.detail || '';
-        },
-        complete() {
-          boot.classList.add('fade-out');
-        }
-      };
-
-      resizeHolo();
-      window.addEventListener('resize', resizeHolo);
-      raf = requestAnimationFrame(drawHolo);
-    })();
   </script>
 </body>
 </html>
