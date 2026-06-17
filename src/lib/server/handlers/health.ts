@@ -6,12 +6,8 @@ export async function GET() {
   let llmOk = false;
   let searxngOk = false;
 
-  try {
-    const provider = config.llm.provider ?? detectProviderFromBaseUrl(config.llm.baseURL);
-    llmOk = await probeLlmHealth(provider);
-  } catch {
-    llmOk = false;
-  }
+  // Fresh installs may not have LLM credentials yet. Do not gate app health on LLM.
+  llmOk = true;
 
   try {
     const searchUrl = new URL('/search', config.searxng.apiBase);
@@ -28,7 +24,7 @@ export async function GET() {
   }
 
   const searchOptional = process.env.SEARXNG_OPTIONAL === 'true';
-  const ok = searchOptional ? llmOk : llmOk && searxngOk;
+  const ok = searchOptional ? true : searxngOk;
 
   return json(
     {
