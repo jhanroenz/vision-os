@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-open-browser-window"
+description = "Enables the open_browser_window command."
+commands.allow = ["open_browser_window"]
+
+[[permission]]
+identifier = "allow-exit-app"
+description = "Enables the exit_app command."
+commands.allow = ["exit_app"]

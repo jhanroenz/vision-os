@@ -1,3 +1,5 @@
+import { apiFetch, resolveApiUrl } from './http.js';
+
 export interface ChatRequest {
   message: string;
   threadId: string;
@@ -9,21 +11,8 @@ export interface ChatEvent {
   [key: string]: unknown;
 }
 
-async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message =
-      data && typeof data === 'object' && 'error' in data
-        ? String((data as { error: string }).error)
-        : `Request failed (${response.status})`;
-    throw new Error(message);
-  }
-  return data as T;
-}
-
 export async function postChat(request: ChatRequest): Promise<Record<string, unknown>> {
-  return api('/api/chat', {
+  return apiFetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
@@ -38,7 +27,7 @@ export async function streamChat(
     onError?: (message: string) => void;
   }
 ): Promise<void> {
-  const response = await fetch('/api/chat/stream', {
+  const response = await fetch(resolveApiUrl('/api/chat/stream'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)

@@ -1,3 +1,5 @@
+import { resolveApiUrl } from '$lib/api/http.js';
+
 export interface TerminalSession {
   id: string;
   cwd: string;
@@ -5,7 +7,7 @@ export interface TerminalSession {
 }
 
 export async function spawnTerminal(cols: number, rows: number): Promise<TerminalSession> {
-  const response = await fetch('/api/terminal/spawn', {
+  const response = await fetch(resolveApiUrl('/api/terminal/spawn'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ cols, rows })
@@ -18,7 +20,7 @@ export async function spawnTerminal(cols: number, rows: number): Promise<Termina
 }
 
 export async function sendTerminalInput(sessionId: string, data: string): Promise<void> {
-  await fetch('/api/terminal/input', {
+  await fetch(resolveApiUrl('/api/terminal/input'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId, data })
@@ -26,7 +28,7 @@ export async function sendTerminalInput(sessionId: string, data: string): Promis
 }
 
 export async function resizeTerminal(sessionId: string, cols: number, rows: number): Promise<void> {
-  await fetch('/api/terminal/resize', {
+  await fetch(resolveApiUrl('/api/terminal/resize'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId, cols, rows })
@@ -34,7 +36,7 @@ export async function resizeTerminal(sessionId: string, cols: number, rows: numb
 }
 
 export function closeTerminal(sessionId: string): void {
-  void fetch(`/api/terminal/session?sessionId=${encodeURIComponent(sessionId)}`, {
+  void fetch(resolveApiUrl(`/api/terminal/session?sessionId=${encodeURIComponent(sessionId)}`), {
     method: 'DELETE'
   });
 }
@@ -48,7 +50,9 @@ export function connectTerminalStream(
     onError?: (message: string) => void;
   }
 ): EventSource {
-  const source = new EventSource(`/api/terminal/stream?sessionId=${encodeURIComponent(sessionId)}`);
+  const source = new EventSource(
+    resolveApiUrl(`/api/terminal/stream?sessionId=${encodeURIComponent(sessionId)}`)
+  );
 
   source.onmessage = (event) => {
     if (event.data === '[DONE]') return;

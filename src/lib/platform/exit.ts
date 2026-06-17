@@ -3,25 +3,31 @@ import {
   completeShutdownAnimation,
   waitForShutdownAnimation
 } from '$lib/stores/os';
-import { isTauri } from './browser';
+import { isTauriShell } from './browser';
 
 const BROWSER_CLOSE_GRACE_MS = 200;
 
 /** Quit the desktop shell (Tauri) or close the browser tab. */
 export async function exitVisionOS(): Promise<void> {
-  if (isTauri()) {
+  if (isTauriShell()) {
+    shutdown.set(true);
+    await waitForShutdownAnimation();
+
     try {
-      shutdown.set(true);
-      await waitForShutdownAnimation();
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       await getCurrentWindow().close();
-      return;
+    } catch (err) {
+      console.error('Failed to close Tauri window:', err);
+    }
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('exit_app');
     } catch (err) {
       console.error('Failed to exit Tauri app:', err);
       completeShutdownAnimation();
-      shutdown.set(true);
-      return;
     }
+    return;
   }
 
   window.close();
@@ -30,7 +36,6 @@ export async function exitVisionOS(): Promise<void> {
     window.setTimeout(resolve, BROWSER_CLOSE_GRACE_MS);
   });
 
-  // Most browsers block window.close() unless this tab was script-opened.
   if (!document.hidden) {
     shutdown.set(true);
   }
