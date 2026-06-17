@@ -19,6 +19,11 @@ on:
         description: 'Upload artifacts to a GitHub Release'
         type: boolean
         default: true
+      release_tag:
+        description: 'Release tag (default: v + package.json version, e.g. v0.1.1)'
+        type: string
+        required: false
+        default: ''
   push:
     tags:
       - 'v*'
@@ -180,8 +185,24 @@ jobs:
           merge-multiple: true
           path: dist
 
+      - name: Resolve release tag
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          elif [ -n "${{ inputs.release_tag }}" ]; then
+            TAG="${{ inputs.release_tag }}"
+          else
+            TAG="v$(node -p "require('./package.json').version")"
+          fi
+          echo "name=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          target_commitish: ${{ github.sha }}
           files: dist/**
           generate_release_notes: true

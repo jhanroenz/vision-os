@@ -108,7 +108,7 @@ fn wait_for_url(url: &str, log_path: &Path, label: &str) -> Result<(), String> {
     Err(format!("{label} did not become healthy at {url}"))
 }
 
-fn start_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> {
+fn spawn_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> {
     let python = searxng_python(resource_dir);
     let settings = searxng_settings(resource_dir);
     if !python.is_file() {
@@ -153,9 +153,43 @@ fn start_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> 
         ),
     );
 
-    let searx_url = format!("http://127.0.0.1:{SEARXNG_PORT}/");
-    wait_for_url(&searx_url, log_path, "SearXNG")?;
     Ok(child)
+}
+
+fn start_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> {
+    let mut child = spawn_searxng(resource_dir, log_path)?;
+    let searx_url = format!("http://127.0.0.1:{SEARXNG_PORT}/");
+    if let Err(e) = wait_for_url(&searx_url, log_path, "SearXNG") {
+        kill_child(&mut child);
+        return Err(e);
+    }
+    Ok(child)
+}
+
+/** Windows installs: web search is best-effort — never block app launch on SearXNG. */
+fn try_start_searxng(resource_dir: &Path, log_path: &Path) -> Option<Child> {
+    let mut child = match spawn_searxng(resource_dir, log_path) {
+        Ok(child) => child,
+        Err(e) => {
+            append_log(
+                log_path,
+                &format!("WARN: SearXNG did not start; continuing without web search: {e}"),
+            );
+            return None;
+        }
+    };
+
+    let searx_url = format!("http://127.0.0.1:{SEARXNG_PORT}/");
+    if let Err(e) = wait_for_url(&searx_url, log_path, "SearXNG") {
+        append_log(
+            log_path,
+            &format!("WARN: SearXNG did not become healthy; continuing without web search: {e}"),
+        );
+        kill_child(&mut child);
+        return None;
+    }
+
+    Some(child)
 }
 
 pub fn start_packaged_backend(app: &AppHandle) -> Result<(), String> {
@@ -180,7 +214,12 @@ pub fn start_packaged_backend(app: &AppHandle) -> Result<(), String> {
 
     let log_path = data_dir.join("server.log");
 
-    let mut searx_child = start_searxng(&resource_dir, &log_path)?;
+    let searx_child = if cfg!(target_os = "windows") {
+        try_start_searxng(&resource_dir, &log_path)
+    } else {
+        Some(start_searxng(&resource_dir, &log_path)?)
+    };
+    let searxng_optional = searx_child.is_none();
 
     let log_file = File::options()
         .create(true)
@@ -210,6 +249,10 @@ pub fn start_packaged_backend(app: &AppHandle) -> Result<(), String> {
         .env("PORT", BACKEND_PORT.to_string())
         .env("SEARXNG_API_BASE", &searx_base)
         .env("SEARXNG_AUTO_START", "false")
+        .env(
+            "SEARXNG_OPTIONAL",
+            if searxng_optional { "true" } else { "false" },
+        )
         .env("DATABASE_PATH", data_dir.join("jarvis.db"))
         .env("WORKSPACE_DIR", &workspace_dir)
         .env("TRANSCRIPT_DIR", &transcripts_dir)
@@ -237,11 +280,13 @@ pub fn start_packaged_backend(app: &AppHandle) -> Result<(), String> {
     if let Some(state) = app.try_state::<ManagedProcesses>() {
         let mut searx_guard = state.searxng.lock().map_err(|e| e.to_string())?;
         let mut node_guard = state.node.lock().map_err(|e| e.to_string())?;
-        *searx_guard = Some(searx_child);
+        *searx_guard = searx_child;
         *node_guard = Some(node_child);
     } else {
         let _ = node_child.kill();
-        let _ = searx_child.kill();
+        if let Some(mut child) = searx_child {
+            kill_child(&mut child);
+        }
         return Err("Process state was not initialized".into());
     }
 

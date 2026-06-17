@@ -27,11 +27,16 @@ export async function GET() {
     searxngOk = false;
   }
 
+  const searchOptional = process.env.SEARXNG_OPTIONAL === 'true';
+  const ok = searchOptional ? llmOk : llmOk && searxngOk;
+
   return json(
     {
-      ok: llmOk && searxngOk,
+      ok,
       llm: llmOk,
       searxng: searxngOk,
+      searchOptional,
+      searchAvailable: searxngOk,
       model: config.llm.model,
       provider: config.llm.provider ?? detectProviderFromBaseUrl(config.llm.baseURL),
       baseURL: config.llm.baseURL,
@@ -40,6 +45,6 @@ export async function GET() {
       searchProvider: 'searxng',
       searxngUrl: config.searxng.apiBase
     },
-    llmOk && searxngOk ? 200 : 503
+    ok ? 200 : 503
   );
 }
