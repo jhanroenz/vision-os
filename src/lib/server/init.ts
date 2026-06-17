@@ -36,11 +36,12 @@ function ensureSearxngOnStartup() {
   if (process.env.SEARXNG_AUTO_START === 'false') return;
   if (process.env.VISIONOS_PACKAGED === 'true') return;
 
-  const script = path.join(visionRoot, 'searxng', 'ensure.sh');
-  const child = spawn('bash', [script], {
+  const script = path.join(visionRoot, 'searxng', 'ensure.mjs');
+  const child = spawn(process.execPath, [script], {
     cwd: visionRoot,
     detached: true,
     stdio: 'ignore',
+    env: { ...process.env, SEARXNG_PORT: process.env.SEARXNG_PORT ?? '8080' },
   });
   child.unref();
   console.log('[VisionOS] Ensuring SearXNG is running…');
