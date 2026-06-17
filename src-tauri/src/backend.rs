@@ -156,16 +156,6 @@ fn spawn_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> 
     Ok(child)
 }
 
-fn start_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> {
-    let mut child = spawn_searxng(resource_dir, log_path)?;
-    let searx_url = format!("http://127.0.0.1:{SEARXNG_PORT}/");
-    if let Err(e) = wait_for_url(&searx_url, log_path, "SearXNG") {
-        kill_child(&mut child);
-        return Err(e);
-    }
-    Ok(child)
-}
-
 /** Windows installs: web search is best-effort — never block app launch on SearXNG. */
 fn try_start_searxng(resource_dir: &Path, log_path: &Path) -> Option<Child> {
     let mut child = match spawn_searxng(resource_dir, log_path) {
@@ -214,11 +204,7 @@ pub fn start_packaged_backend(app: &AppHandle) -> Result<(), String> {
 
     let log_path = data_dir.join("server.log");
 
-    let searx_child = if cfg!(target_os = "windows") {
-        try_start_searxng(&resource_dir, &log_path)
-    } else {
-        Some(start_searxng(&resource_dir, &log_path)?)
-    };
+    let searx_child = try_start_searxng(&resource_dir, &log_path);
     let searxng_optional = searx_child.is_none();
 
     let log_file = File::options()
@@ -274,8 +260,10 @@ pub fn start_packaged_backend(app: &AppHandle) -> Result<(), String> {
         ),
     );
 
-    let health_url = format!("http://127.0.0.1:{BACKEND_PORT}/api/health");
-    wait_for_url(&health_url, &log_path, "VisionOS backend")?;
+    // Do not gate app launch on /api/health because it can report degraded
+    // (e.g. missing LLM/search) even when the backend is up and UI can load.
+    let backend_url = format!("http://127.0.0.1:{BACKEND_PORT}/");
+    wait_for_url(&backend_url, &log_path, "VisionOS backend")?;
 
     if let Some(state) = app.try_state::<ManagedProcesses>() {
         let mut searx_guard = state.searxng.lock().map_err(|e| e.to_string())?;
