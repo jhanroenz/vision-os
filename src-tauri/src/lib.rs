@@ -1,6 +1,9 @@
 mod backend;
 
-use backend::{manage_backend, navigate_main_window, on_run_event, start_packaged_backend, BACKEND_PORT};
+use backend::{
+    manage_backend, navigate_main_window, on_run_event, show_startup_error, show_startup_loading,
+    start_packaged_backend, StartupReporter, BACKEND_PORT,
+};
 use tauri::{include_image, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 const WINDOW_ICON: tauri::image::Image<'static> = include_image!("icons/icon.png");
@@ -62,8 +65,31 @@ pub fn run() {
 
             if !cfg!(debug_assertions) {
                 let handle = app.handle().clone();
-                start_packaged_backend(&handle)?;
-                navigate_main_window(&handle, BACKEND_PORT)?;
+                let reporter = StartupReporter::new(handle.clone());
+                show_startup_loading(&handle)?;
+                reporter.step(2, "Starting VisionOS…");
+
+                std::thread::spawn(move || {
+                    let result = start_packaged_backend(&handle, &reporter);
+                    let handle_for_ui = handle.clone();
+                    let _ = handle.run_on_main_thread(move || {
+                        match result {
+                            Ok(()) => {
+                                if let Err(e) = navigate_main_window(&handle_for_ui, BACKEND_PORT) {
+                                    log::error!("Failed to open VisionOS UI: {e}");
+                                    let _ = show_startup_error(
+                                        &handle_for_ui,
+                                        &format!("Failed to open VisionOS UI:\n{e}"),
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                log::error!("Packaged backend failed: {e}");
+                                let _ = show_startup_error(&handle_for_ui, &e);
+                            }
+                        }
+                    });
+                });
             }
 
             Ok(())

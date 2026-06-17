@@ -19,6 +19,12 @@
   let fading = $state(false);
 
   onMount(() => {
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('visionos-boot-complete') === '1') {
+      sessionStorage.removeItem('visionos-boot-complete');
+      booted.set(true);
+      return;
+    }
+
     const start = performance.now();
     const duration = 2800;
 
