@@ -5,11 +5,16 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { config } from './config.js';
 import { dataDir, visionRoot } from './env';
-import { isPackaged } from './paths.js';
+import { isDriveOrFilesystemRoot, isPackaged } from './paths.js';
 
 let ready = false;
 
 async function ensureRuntimeDirs() {
+  if (isDriveOrFilesystemRoot(config.workspaceDir)) {
+    throw new Error(
+      `Invalid WORKSPACE_DIR (${config.workspaceDir}). Set WORKSPACE_DIR in .env to a folder path, e.g. ${path.join(path.dirname(dataDir), 'workspace')}`,
+    );
+  }
   await fs.mkdir(dataDir, { recursive: true });
   await fs.mkdir(config.workspaceDir, { recursive: true });
   await fs.mkdir(path.join(dataDir, 'transcripts'), { recursive: true });

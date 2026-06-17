@@ -22,6 +22,11 @@ import {
 } from "./settingsRegistry.js";
 import { getSeedDefaults } from "./seedDefaults.js";
 import {
+  defaultWorkspaceDir,
+  isDriveOrFilesystemRoot,
+  resolveDataDir,
+} from "./paths.js";
+import {
   normalizeLlmBaseUrl,
   detectProviderFromBaseUrl,
   listProviderPresets,
@@ -728,7 +733,10 @@ function buildPersistedLlmSnapshot(validated) {
 
 function isLegacyWorkspaceDir(dir) {
   const normalized = path.resolve(String(dir ?? "")).replace(/\\/g, "/");
-  return normalized.endsWith("/src/lib/workspace");
+  if (normalized.endsWith("/src/lib/workspace")) return true;
+  // Old dev default: repo root + ../.. (breaks on Windows, e.g. D:\AI stuff\vision-os → D:\)
+  if (isDriveOrFilesystemRoot(normalized)) return true;
+  return false;
 }
 
 /** WORKSPACE_DIR in .env wins; migrate bad persisted paths from an old settings default. */
@@ -738,10 +746,13 @@ async function syncWorkspaceDirFromEnv() {
     : null;
   const previous = config.workspaceDir;
 
-  if (envWorkspace) {
+  if (envWorkspace && !isDriveOrFilesystemRoot(envWorkspace)) {
     config.workspaceDir = envWorkspace;
-  } else if (isLegacyWorkspaceDir(config.workspaceDir)) {
-    config.workspaceDir = path.resolve(path.join(rootDirFromConfig(), "../.."));
+  } else if (
+    isLegacyWorkspaceDir(config.workspaceDir) ||
+    isDriveOrFilesystemRoot(config.workspaceDir)
+  ) {
+    config.workspaceDir = defaultWorkspaceDir(resolveDataDir());
   }
 
   const storedDir = persistedPayload?.workspace?.workspaceDir;
@@ -753,10 +764,6 @@ async function syncWorkspaceDirFromEnv() {
     persistedPayload.workspace.workspaceDir = config.workspaceDir;
     await persistSettingsPayload(persistedPayload);
   }
-}
-
-function rootDirFromConfig() {
-  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 }
 
 export async function initSettings() {

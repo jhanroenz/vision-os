@@ -4,7 +4,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { execSync, spawn } from 'node:child_process';
+import { execSync, spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -39,10 +39,37 @@ export function hasCommand(cmd) {
   }
 }
 
+function windowsDockerExe() {
+  if (process.platform !== 'win32') return null;
+  const roots = [
+    process.env.ProgramFiles,
+    process.env['ProgramFiles(x86)'],
+    'C:\\Program Files',
+  ].filter(Boolean);
+  for (const root of roots) {
+    const exe = join(root, 'Docker', 'Docker', 'resources', 'bin', 'docker.exe');
+    if (existsSync(exe)) return exe;
+  }
+  return null;
+}
+
 export function containerEngine() {
+  const winDocker = windowsDockerExe();
+  if (winDocker) return winDocker;
   if (hasCommand('docker')) return 'docker';
   if (hasCommand('podman')) return 'podman';
   return null;
+}
+
+/** True when the container CLI can reach a running engine (not just installed). */
+export function isContainerEngineReady() {
+  const engine = containerEngine();
+  if (!engine) return false;
+  const result = spawnSync(engine, ['info'], {
+    stdio: 'ignore',
+    windowsHide: true,
+  });
+  return result.status === 0;
 }
 
 export function bundledPython(root = repoRoot()) {
@@ -109,18 +136,28 @@ export function composeFile(root = repoRoot()) {
   return join(root, 'searxng', 'docker-compose.yml');
 }
 
+function runProcess(cmd, args, { cwd, env, stdio = 'inherit' } = {}) {
+  const result = spawnSync(cmd, args, {
+    cwd,
+    env,
+    stdio,
+    windowsHide: true,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`Command failed (${result.status}): ${cmd} ${args.join(' ')}`);
+  }
+}
+
 export function runCompose(args, { root = repoRoot(), env = {} } = {}) {
   const engine = containerEngine();
   if (!engine) {
     throw new Error('Docker or Podman is required for containerized SearXNG.');
   }
   const file = composeFile(root);
-  const cmd = [engine, 'compose', '-f', file, ...args];
-  execSync(cmd.join(' '), {
+  runProcess(engine, ['compose', '-f', file, ...args], {
     cwd: root,
-    stdio: 'inherit',
     env: { ...process.env, ...env },
-    shell: process.platform === 'win32',
   });
 }
 
@@ -132,22 +169,17 @@ export function loadBundledImage(root = repoRoot()) {
   const bundledImage = 'visionos-searxng:local';
   if (!existsSync(imageTar)) return;
 
-  try {
-    execSync(`${engine} image inspect ${bundledImage}`, {
-      stdio: 'ignore',
-      shell: true,
-    });
+  const inspect = spawnSync(engine, ['image', 'inspect', bundledImage], {
+    stdio: 'ignore',
+    windowsHide: true,
+  });
+  if (inspect.status === 0) {
     process.env.SEARXNG_IMAGE = bundledImage;
     return;
-  } catch {
-    // not loaded yet
   }
 
   console.log(`Loading bundled SearXNG image from ${imageTar}…`);
-  execSync(`${engine} load -i "${imageTar}"`, {
-    stdio: 'inherit',
-    shell: process.platform === 'win32',
-  });
+  runProcess(engine, ['load', '-i', imageTar]);
   process.env.SEARXNG_IMAGE = bundledImage;
 }
 
@@ -245,23 +277,35 @@ export async function ensureSearxng({
   preferBundled = process.env.SEARXNG_USE_BUNDLED === 'true',
 } = {}) {
   const devPort = Number(process.env.SEARXNG_PORT ?? DEV_SEARXNG_PORT);
+  const devUrl = searxngUrl(devPort);
+
+  if (await isHealthy(devUrl)) {
+    console.log(`SearXNG already running at ${devUrl}`);
+    return devUrl;
+  }
 
   if (preferBundled && hasBundledRuntime(root)) {
     return ensureBundledSearxng({ root });
   }
 
-  if (containerEngine()) {
+  if (isContainerEngineReady()) {
     return ensureDockerSearxng({ root, port: devPort });
   }
 
+  if (containerEngine() && !isContainerEngineReady()) {
+    console.warn(
+      'Docker/Podman is installed but the engine is not running. Start Docker Desktop, or use bundled SearXNG.',
+    );
+  }
+
   if (hasBundledRuntime(root)) {
-    console.log('Docker not found — using bundled SearXNG Python runtime.');
+    console.log('Using bundled SearXNG Python runtime.');
     return ensureBundledSearxng({ root });
   }
 
   throw new Error(
-    'SearXNG is not available. Install Docker Desktop, or build the bundled runtime:\n' +
+    'SearXNG is not available. Start Docker Desktop, or build the bundled runtime:\n' +
       '  npm run prepare:release\n' +
-      'Then either start Docker or set SEARXNG_USE_BUNDLED=true',
+      'Then run dev again, or set SEARXNG_USE_BUNDLED=true',
   );
 }

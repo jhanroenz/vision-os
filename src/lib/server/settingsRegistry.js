@@ -1,11 +1,6 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { applyProviderDefaults } from "./llmProviders.js";
-
-const rootDir = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-);
+import { defaultWorkspaceDir, resolveDataDir } from "./paths.js";
 
 export const SETTING_SECTIONS = [
   "llm",
@@ -39,7 +34,7 @@ export const SETTING_FIELDS = [
   { key: "rateLimitBaseBackoffMs", section: "llm", path: ["llm", "rateLimit", "baseBackoffMs"], type: "number", default: 1000, label: "Rate limit base backoff (ms)", min: 100, max: 60000 },
   { key: "rateLimitMaxBackoffMs", section: "llm", path: ["llm", "rateLimit", "maxBackoffMs"], type: "number", default: 120000, label: "Rate limit max backoff (ms)", min: 1000, max: 600000 },
   // --- workspace ---
-  { key: "workspaceDir", section: "workspace", path: ["workspaceDir"], type: "string", default: path.join(rootDir, "../.."), label: "Workspace directory", restartRequired: true },
+  { key: "workspaceDir", section: "workspace", path: ["workspaceDir"], type: "string", default: defaultWorkspaceDir(resolveDataDir()), label: "Workspace directory", restartRequired: true },
   { key: "fileMapMaxDepth", section: "workspace", path: ["workspaceFileMap", "maxDepth"], type: "number", default: 12, label: "File map max depth", min: 1, max: 32 },
   { key: "fileMapMaxFiles", section: "workspace", path: ["workspaceFileMap", "maxFiles"], type: "number", default: 500, label: "File map max files", min: 50, max: 5000 },
   { key: "fileMapMaxChars", section: "workspace", path: ["workspaceFileMap", "maxChars"], type: "number", default: 12000, label: "File map max chars", min: 1000, max: 100000 },
