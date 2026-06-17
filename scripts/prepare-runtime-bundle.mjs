@@ -101,6 +101,7 @@ run('npm rebuild better-sqlite3 node-pty', server);
 cpSync(join(root, 'searxng'), join(out, 'searxng'), { recursive: true });
 mkdirSync(join(out, 'scripts'), { recursive: true });
 cpSync(join(root, 'scripts', 'ensure-packaged-searxng.mjs'), join(out, 'scripts', 'ensure-packaged-searxng.mjs'));
+cpSync(join(root, 'scripts', 'searxng-windows-patches.mjs'), join(out, 'scripts', 'searxng-windows-patches.mjs'));
 mkdirSync(join(out, 'searxng', 'core-config'), { recursive: true });
 writeFileSync(join(out, 'searxng', 'core-config', 'settings.yml'), PACKAGED_SEARXNG_SETTINGS);
 

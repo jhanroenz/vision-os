@@ -197,7 +197,11 @@ fn verify_searxng_import(resource_dir: &Path) -> bool {
     prepend_python_runtime(&mut cmd, resource_dir);
     apply_hidden_child_process(&mut cmd);
     cmd.arg("-c")
-        .arg("import searx")
+        .arg(if cfg!(target_os = "windows") {
+            "from searx import limiter"
+        } else {
+            "import searx"
+        })
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     cmd.status()
@@ -285,8 +289,63 @@ fn rebuild_searxng_venv(resource_dir: &Path, log_path: &Path) -> Result<(), Stri
     Ok(())
 }
 
+fn patch_valkeydb_file(path: &Path) -> Result<bool, String> {
+    if !path.is_file() {
+        return Ok(false);
+    }
+
+    let mut text = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    if text.contains("VISIONOS_WINDOWS_VALKEY_GUARD") {
+        return Ok(false);
+    }
+    if !text.contains("import pwd") {
+        return Ok(false);
+    }
+
+    text = text.replace(
+        "import os\r\nimport pwd\r\nimport logging",
+        "import os\n\ntry:\n    import pwd\nexcept ImportError:  # VISIONOS_WINDOWS_VALKEY_GUARD\n    pwd = None  # type: ignore\n\nimport logging",
+    );
+    text = text.replace(
+        "import os\nimport pwd\nimport logging",
+        "import os\n\ntry:\n    import pwd\nexcept ImportError:  # VISIONOS_WINDOWS_VALKEY_GUARD\n    pwd = None  # type: ignore\n\nimport logging",
+    );
+    text = text.replace(
+        "        _pw = pwd.getpwuid(os.getuid())\r\n        logger.exception(\"[%s (%s)] can't connect valkey DB ...\", _pw.pw_name, _pw.pw_uid)",
+        "        if pwd is not None:\r\n            _pw = pwd.getpwuid(os.getuid())\r\n            logger.exception(\"[%s (%s)] can't connect valkey DB ...\", _pw.pw_name, _pw.pw_uid)\r\n        else:\r\n            logger.exception(\"can't connect valkey DB ...\")",
+    );
+    text = text.replace(
+        "        _pw = pwd.getpwuid(os.getuid())\n        logger.exception(\"[%s (%s)] can't connect valkey DB ...\", _pw.pw_name, _pw.pw_uid)",
+        "        if pwd is not None:\n            _pw = pwd.getpwuid(os.getuid())\n            logger.exception(\"[%s (%s)] can't connect valkey DB ...\", _pw.pw_name, _pw.pw_uid)\n        else:\n            logger.exception(\"can't connect valkey DB ...\")",
+    );
+
+    fs::write(path, text).map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+fn patch_searxng_windows_sources(resource_dir: &Path) -> Result<(), String> {
+    if !cfg!(target_os = "windows") {
+        return Ok(());
+    }
+
+    let src_valkeydb = resource_dir
+        .join("searxng-src")
+        .join("searx")
+        .join("valkeydb.py");
+    let _ = patch_valkeydb_file(&src_valkeydb)?;
+
+    let site_valkeydb = searxng_site_packages_glob(resource_dir)
+        .join("searx")
+        .join("valkeydb.py");
+    let _ = patch_valkeydb_file(&site_valkeydb)?;
+
+    Ok(())
+}
+
 /** CI-built venvs embed absolute paths; repair them after install to the user's machine. */
 fn ensure_searxng_venv(resource_dir: &Path, log_path: &Path) -> Result<(), String> {
+    patch_searxng_windows_sources(resource_dir)?;
+
     if verify_searxng_import(resource_dir) {
         return Ok(());
     }

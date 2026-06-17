@@ -171,6 +171,9 @@ function applyPackagedRuntimeOverrides() {
   if (process.env.VISIONOS_PACKAGED !== "true") return;
   if (process.env.SEARXNG_API_BASE) {
     config.searxng.apiBase = process.env.SEARXNG_API_BASE;
+    if (persistedPayload?.search) {
+      persistedPayload.search.searxngApiBase = process.env.SEARXNG_API_BASE;
+    }
   }
   if (process.env.WORKSPACE_DIR) {
     config.workspaceDir = path.resolve(process.env.WORKSPACE_DIR);

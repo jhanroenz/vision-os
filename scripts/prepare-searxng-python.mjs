@@ -6,6 +6,7 @@
 import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
+import { patchBundledSearxngSources } from './searxng-windows-patches.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const out = resolve(root, 'src-tauri/bundle-runtime');
@@ -119,31 +120,6 @@ GIT_BRANCH = "vendor"
   console.log('Wrote searx/version_frozen.py for', version);
 }
 
-/** Command engines are Unix-oriented; disable on Windows bundled runtime. */
-function patchCommandEngineForWindows() {
-  if (process.platform !== 'win32') return;
-
-  const file = join(srcDir, 'searx', 'engines', 'command.py');
-  let text = readFileSync(file, 'utf8');
-  if (text.includes('VISIONOS_WINDOWS_GUARD')) return;
-
-  const pattern = /def search\(query, params\) -> EngineResults:\r?\n(\s+)res = EngineResults\(\)/;
-  const replacement =
-    'def search(query, params) -> EngineResults:\n' +
-    "    import os\n" +
-    "    if os.name == 'nt':  # VISIONOS_WINDOWS_GUARD\n" +
-    '        return EngineResults()\n' +
-    '    res = EngineResults()';
-
-  if (!pattern.test(text)) {
-    console.warn('Could not patch command.py for Windows (upstream changed)');
-    return;
-  }
-
-  writeFileSync(file, text.replace(pattern, replacement), 'utf8');
-  console.log('Patched searx/engines/command.py for Windows');
-}
-
 function main() {
   if (!existsSync(pythonRoot)) {
     throw new Error('Run npm run prepare:python before prepare:searxng-python');
@@ -166,8 +142,9 @@ function main() {
   stageSearxngSource();
   pruneRuntimeTree();
   writeVersionFrozen();
-  patchCommandEngineForWindows();
+  patchBundledSearxngSources(srcDir);
   run(`"${vpy}" -m pip install --use-pep517 --no-build-isolation .`, { cwd: srcDir });
+  patchBundledSearxngSources(srcDir, venvDir);
 
   console.log('SearXNG virtualenv ready at', venvDir);
 }

@@ -6,6 +6,7 @@
 import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
+import { patchBundledSearxngSources } from './searxng-windows-patches.mjs';
 
 const root = resolve(process.env.VISIONOS_BUNDLE_ROOT ?? process.argv[2] ?? '');
 if (!root) {
@@ -46,26 +47,6 @@ function run(cmd, opts = {}) {
   });
 }
 
-function patchCommandEngineForWindows() {
-  if (process.platform !== 'win32') return;
-
-  const file = join(srcDir, 'searx', 'engines', 'command.py');
-  if (!existsSync(file)) return;
-  let text = readFileSync(file, 'utf8');
-  if (text.includes('VISIONOS_WINDOWS_GUARD')) return;
-
-  const pattern = /def search\(query, params\) -> EngineResults:\r?\n(\s+)res = EngineResults\(\)/;
-  const replacement =
-    'def search(query, params) -> EngineResults:\n' +
-    "    import os\n" +
-    "    if os.name == 'nt':  # VISIONOS_WINDOWS_GUARD\n" +
-    '        return EngineResults()\n' +
-    '    res = EngineResults()';
-
-  if (!pattern.test(text)) return;
-  writeFileSync(file, text.replace(pattern, replacement), 'utf8');
-}
-
 function main() {
   if (!existsSync(join(srcDir, 'searx', 'webapp.py'))) {
     throw new Error(`Bundled SearXNG source missing at ${srcDir}`);
@@ -85,10 +66,11 @@ function main() {
     run(`"${vpy}" -m pip install -U lxml`);
   }
 
-  patchCommandEngineForWindows();
+  patchBundledSearxngSources(srcDir);
   run(`"${vpy}" -m pip install --use-pep517 --no-build-isolation .`, { cwd: srcDir });
+  patchBundledSearxngSources(srcDir, venvDir);
 
-  run(`"${vpy}" -c "import searx"`);
+  run(`"${vpy}" -c "from searx import limiter"`);
   console.log('SearXNG virtualenv ready');
 }
 
