@@ -167,7 +167,7 @@ function main() {
   pruneRuntimeTree();
   writeVersionFrozen();
   patchCommandEngineForWindows();
-  run(`"${vpy}" -m pip install --use-pep517 --no-build-isolation -e .`, { cwd: srcDir });
+  run(`"${vpy}" -m pip install --use-pep517 --no-build-isolation .`, { cwd: srcDir });
 
   console.log('SearXNG virtualenv ready at', venvDir);
 }

@@ -136,7 +136,6 @@ fn prepend_node_to_path(cmd: &mut Command, resource_dir: &Path) {
 }
 
 fn prepend_python_runtime(cmd: &mut Command, resource_dir: &Path) {
-    let python_root = resource_dir.join("python");
     let venv = resource_dir.join("searxng-venv");
     let venv_bin = if cfg!(target_os = "windows") {
         venv.join("Scripts")
@@ -147,11 +146,172 @@ fn prepend_python_runtime(cmd: &mut Command, resource_dir: &Path) {
     if venv.is_dir() {
         cmd.env("VIRTUAL_ENV", &venv);
     }
-    if python_root.is_dir() {
-        cmd.env("PYTHONHOME", &python_root);
+
+    // Do not set PYTHONHOME — it breaks venv interpreters relocated after CI packaging.
+    prepend_path_dirs(cmd, &[venv_bin]);
+}
+
+fn bundled_python_home(resource_dir: &Path) -> PathBuf {
+    resource_dir.join("python")
+}
+
+fn bundled_python_exe(resource_dir: &Path) -> PathBuf {
+    if cfg!(target_os = "windows") {
+        bundled_python_home(resource_dir).join("python.exe")
+    } else {
+        bundled_python_home(resource_dir).join("bin").join("python3")
+    }
+}
+
+fn searxng_venv_dir(resource_dir: &Path) -> PathBuf {
+    resource_dir.join("searxng-venv")
+}
+
+fn searxng_site_packages_glob(resource_dir: &Path) -> PathBuf {
+    let venv = searxng_venv_dir(resource_dir);
+    if cfg!(target_os = "windows") {
+        return venv.join("Lib").join("site-packages");
+    }
+    let lib = venv.join("lib");
+    if let Ok(entries) = fs::read_dir(&lib) {
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with("python") {
+                let site = entry.path().join("site-packages");
+                if site.is_dir() {
+                    return site;
+                }
+            }
+        }
+    }
+    lib.join("python3.12").join("site-packages")
+}
+
+fn verify_searxng_import(resource_dir: &Path) -> bool {
+    let vpy = searxng_python(resource_dir);
+    if !vpy.is_file() {
+        return false;
+    }
+    let mut cmd = Command::new(&vpy);
+    apply_isolated_runtime_env(&mut cmd);
+    prepend_python_runtime(&mut cmd, resource_dir);
+    apply_hidden_child_process(&mut cmd);
+    cmd.arg("-c")
+        .arg("import searx")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    cmd.status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+fn write_packaged_pyvenv_cfg(resource_dir: &Path) -> Result<(), String> {
+    let venv_dir = searxng_venv_dir(resource_dir);
+    let python_home = bundled_python_home(resource_dir);
+    let python_exe = bundled_python_exe(resource_dir);
+    let content = format!(
+        "home = {}\ninclude-system-site-packages = false\nexecutable = {}\ncommand = {} -m venv {}\n",
+        python_home.display(),
+        python_exe.display(),
+        python_exe.display(),
+        venv_dir.display()
+    );
+    fs::write(venv_dir.join("pyvenv.cfg"), content).map_err(|e| e.to_string())
+}
+
+fn patch_editable_searxng_finders(resource_dir: &Path) -> Result<(), String> {
+    let site = searxng_site_packages_glob(resource_dir);
+    if !site.is_dir() {
+        return Ok(());
     }
 
-    prepend_path_dirs(cmd, &[venv_bin, python_root]);
+    let searx_pkg = resource_dir.join("searxng-src").join("searx");
+    let searx_path = searx_pkg
+        .to_string_lossy()
+        .replace('\\', "/");
+
+    for entry in fs::read_dir(&site).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let file_name = entry.file_name().to_string_lossy().into_owned();
+        if !file_name.starts_with("__editable___searxng") || !file_name.ends_with("_finder.py") {
+            continue;
+        }
+
+        let path = entry.path();
+        let mut text = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        let Some(start) = text.find("MAPPING:") else {
+            continue;
+        };
+        let Some(rel_end) = text[start..].find('\n') else {
+            continue;
+        };
+        let end = start + rel_end;
+        let replacement = format!("MAPPING: dict[str, str] = {{'searx': '{searx_path}'}}");
+        text.replace_range(start..end, &replacement);
+        fs::write(&path, text).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+fn rebuild_searxng_venv(resource_dir: &Path, log_path: &Path) -> Result<(), String> {
+    let script = resource_dir.join("scripts").join("ensure-packaged-searxng.mjs");
+    if !script.is_file() {
+        return Err(format!(
+            "SearXNG repair script missing: {}",
+            script.display()
+        ));
+    }
+
+    append_log(log_path, "Rebuilding bundled SearXNG virtualenv…");
+
+    let node = node_binary(resource_dir);
+    let mut cmd = Command::new(&node);
+    apply_isolated_runtime_env(&mut cmd);
+    prepend_node_to_path(&mut cmd, resource_dir);
+    apply_hidden_child_process(&mut cmd);
+    let status = cmd
+        .arg(&script)
+        .env("VISIONOS_BUNDLE_ROOT", resource_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .status()
+        .map_err(|e| format!("Failed to rebuild SearXNG venv: {e}"))?;
+
+    if !status.success() {
+        return Err("SearXNG virtualenv rebuild failed (see searxng.log)".into());
+    }
+
+    Ok(())
+}
+
+/** CI-built venvs embed absolute paths; repair them after install to the user's machine. */
+fn ensure_searxng_venv(resource_dir: &Path, log_path: &Path) -> Result<(), String> {
+    if verify_searxng_import(resource_dir) {
+        return Ok(());
+    }
+
+    append_log(
+        log_path,
+        "WARN: SearXNG venv not importable; repairing packaged Python paths…",
+    );
+
+    write_packaged_pyvenv_cfg(resource_dir)?;
+    patch_editable_searxng_finders(resource_dir)?;
+
+    if verify_searxng_import(resource_dir) {
+        append_log(log_path, "SearXNG venv repaired successfully.");
+        return Ok(());
+    }
+
+    rebuild_searxng_venv(resource_dir, log_path)?;
+
+    if verify_searxng_import(resource_dir) {
+        append_log(log_path, "SearXNG venv rebuilt successfully.");
+        return Ok(());
+    }
+
+    Err("SearXNG virtualenv is not usable after repair".into())
 }
 
 #[cfg(windows)]
@@ -187,6 +347,11 @@ fn apply_isolated_runtime_env(cmd: &mut Command) {
         "WAYLAND_DISPLAY",
         "SSL_CERT_FILE",
         "SSL_CERT_DIR",
+        "PATHEXT",
+        "COMSPEC",
+        "PROGRAMDATA",
+        "PROGRAMFILES",
+        "PROGRAMFILES(X86)",
     ] {
         if let Ok(val) = std::env::var(key) {
             cmd.env(key, val);
@@ -240,13 +405,15 @@ fn wait_for_url_with_progress(
 
 fn searxng_startup_wait() -> Duration {
     if cfg!(target_os = "windows") {
-        Duration::from_secs(20)
+        Duration::from_secs(60)
     } else {
         Duration::from_secs(60)
     }
 }
 
 fn spawn_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> {
+    ensure_searxng_venv(resource_dir, log_path)?;
+
     let python = searxng_python(resource_dir);
     let settings = searxng_settings(resource_dir);
     if !python.is_file() {
@@ -280,6 +447,7 @@ fn spawn_searxng(resource_dir: &Path, log_path: &Path) -> Result<Child, String> 
         .current_dir(resource_dir.join("searxng-src"))
         .env("SEARXNG_SETTINGS_PATH", &settings)
         .env("SEARXNG_BIND_ADDRESS", "127.0.0.1")
+        .env("SEARXNG_PORT", SEARXNG_PORT.to_string())
         .stdout(Stdio::from(log_file.try_clone().map_err(|e| e.to_string())?))
         .stderr(Stdio::from(log_file))
         .spawn()

@@ -272,7 +272,7 @@ export const research = {
 
       if (sawSearchError && !sawAnySource) {
         const hint =
-          'Web search failed. Check that SearXNG is running and SEARXNG_API_BASE is reachable (example: http://localhost:8080).';
+          'Web search failed. Check that SearXNG is running (packaged builds use http://127.0.0.1:37583).';
         setState((s) => ({
           ...s,
           error: searchErrorMessage ? `${hint} Last error: ${searchErrorMessage}` : hint
