@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VisionOS</title>
+  <style>
+    :root {
+      --accent: #6c5ce7;
+      --text: #eef1f8;
+      --text-muted: #8b95a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #070a12;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    .boot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0a0e17 60%, #050810 100%);
+      transition: opacity 0.45s ease, visibility 0.45s;
+    }
+    .boot.fade-out { opacity: 0; visibility: hidden; pointer-events: none; }
+    .boot-glow {
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(46, 200, 255, 0.4) 0%, rgba(0, 80, 170, 0.12) 45%, transparent 72%);
+      filter: blur(64px);
+      animation: bootHoloBreath 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+      z-index: 0;
+    }
+    .jarvis-holo-constellations {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes bootHoloBreath {
+      0%, 100% { opacity: 0.35; transform: scale(0.88); }
+      50% { opacity: 0.8; transform: scale(1.28); }
+    }
+    .boot-content { position: relative; text-align: center; z-index: 1; }
+    .boot-logo-mark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      min-height: 104px;
+    }
+    .visionos-logo { display: block; filter: drop-shadow(0 0 10px rgba(46, 200, 255, 0.35)) drop-shadow(0 0 24px rgba(46, 200, 255, 0.2)); }
+    .boot-logo h1 {
+      display: inline-flex;
+      align-items: center;
+      font-size: 38px;
+      font-weight: 200;
+      text-transform: uppercase;
+    }
+    .boot-logo-word { letter-spacing: 6px; }
+    .boot-logo-word:first-of-type { margin-right: -6px; padding-right: 0.22em; }
+    .boot-logo-word:last-of-type { padding-left: 0.22em; }
+    .boot-logo-sep {
+      display: inline-block;
+      width: 1px;
+      height: 1.32em;
+      background: rgba(238, 241, 248, 0.22);
+      flex-shrink: 0;
+    }
+    .boot-logo p { color: var(--text-muted); margin-top: 8px; font-size: 14px; }
+    .boot-progress {
+      width: 300px;
+      height: 3px;
+      margin: 40px auto 0;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .boot-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #a29bfe, var(--accent));
+      background-size: 200% 100%;
+      border-radius: 2px;
+      transition: width 0.2s ease-out;
+      animation: shimmer 2s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .boot-status {
+      margin-top: 16px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    }
+    .boot-detail {
+      margin-top: 8px;
+      color: rgba(139, 149, 168, 0.75);
+      font-size: 11px;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <div class="boot" id="boot">
+    <div class="boot-glow"></div>
+    <canvas class="jarvis-holo-constellations" id="holo" aria-hidden="true"></canvas>
+    <div class="boot-content">
+      <div class="boot-logo">
+        <div class="boot-logo-mark">
+          <svg class="visionos-logo" width="88" height="88" viewBox="0 0 100 100" aria-label="VisionOS">
+            <defs>
+              <radialGradient id="vos-glow" cx="50%" cy="45%" r="55%">
+                <stop offset="0%" stop-color="#b8f7ff" stop-opacity="0.55" />
+                <stop offset="45%" stop-color="#2ec8ff" stop-opacity="0.22" />
+                <stop offset="100%" stop-color="#0050aa" stop-opacity="0" />
+              </radialGradient>
+              <radialGradient id="vos-node" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="55%" stop-color="#8ee9ff" />
+                <stop offset="100%" stop-color="#1aa8ff" stop-opacity="0.8" />
+              </radialGradient>
+            </defs>
+            <circle cx="50" cy="50" r="44" fill="url(#vos-glow)" />
+            <g opacity="0.9">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#5fe4ff" stroke-width="0.9" />
+              <ellipse cx="50" cy="50" rx="40" ry="11" fill="none" stroke="#4ad8ff" stroke-width="0.75" />
+              <ellipse cx="50" cy="50" rx="40" ry="11" fill="none" stroke="#4ad8ff" stroke-width="0.75" transform="rotate(60 50 50)" />
+              <ellipse cx="50" cy="50" rx="40" ry="11" fill="none" stroke="#4ad8ff" stroke-width="0.75" transform="rotate(120 50 50)" />
+              <ellipse cx="50" cy="50" rx="11" ry="40" fill="none" stroke="#4ad8ff" stroke-width="0.7" />
+              <ellipse cx="50" cy="50" rx="11" ry="40" fill="none" stroke="#4ad8ff" stroke-width="0.7" transform="rotate(60 50 50)" />
+            </g>
+            <circle cx="50" cy="50" r="2.6" fill="url(#vos-node)" />
+            <circle cx="50" cy="10" r="2.4" fill="url(#vos-node)" />
+            <circle cx="50" cy="90" r="2.4" fill="url(#vos-node)" />
+            <circle cx="10" cy="50" r="2.2" fill="url(#vos-node)" />
+            <circle cx="90" cy="50" r="2.2" fill="url(#vos-node)" />
+          </svg>
+        </div>
+        <h1>
+          <span class="boot-logo-word">Vision</span>
+          <span class="boot-logo-sep" aria-hidden="true"></span>
+          <span class="boot-logo-word">OS</span>
+        </h1>
+        <p>Jarvis Desktop Interface</p>
+      </div>
+      <div class="boot-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressbar">
+        <div class="boot-progress-bar" id="progress"></div>
+      </div>
+      <p class="boot-status" id="status">Starting VisionOS…</p>
+      <p class="boot-detail" id="detail"></p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const holo = document.getElementById('holo');
+      const progress = document.getElementById('progress');
+      const progressbar = document.getElementById('progressbar');
+      const status = document.getElementById('status');
+      const detail = document.getElementById('detail');
+      const boot = document.getElementById('boot');
+      const motes = [];
+      let w = 0, h = 0, raf = 0;
+
+      function resizeHolo() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth;
+        h = window.innerHeight;
+        holo.width = Math.round(w * dpr);
+        holo.height = Math.round(h * dpr);
+        holo.style.width = w + 'px';
+        holo.style.height = h + 'px';
+        if (!motes.length) {
+          for (let i = 0; i < 48; i++) {
+            motes.push({
+              x: Math.random() * w,
+              y: Math.random() * h,
+              vx: (Math.random() - 0.5) * 0.12,
+              vy: (Math.random() - 0.5) * 0.12,
+              size: Math.random() * 1.4 + 0.4,
+              phase: Math.random() * Math.PI * 2
+            });
+          }
+        }
+      }
+
+      function drawHolo(time) {
+        const ctx = holo.getContext('2d');
+        if (!ctx) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        for (const m of motes) {
+          m.x += m.vx;
+          m.y += m.vy;
+          if (m.x < 0) m.x = w;
+          if (m.x > w) m.x = 0;
+          if (m.y < 0) m.y = h;
+          if (m.y > h) m.y = 0;
+          const pulse = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(time * 0.0015 + m.phase));
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, m.size * pulse, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(120, 220, 255, ' + (0.15 + pulse * 0.35) + ')';
+          ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(90, 200, 255, 0.06)';
+        for (let i = 0; i < motes.length; i++) {
+          for (let j = i + 1; j < motes.length; j++) {
+            const dx = motes[i].x - motes[j].x;
+            const dy = motes[i].y - motes[j].y;
+            if (dx * dx + dy * dy < 10000) {
+              ctx.beginPath();
+              ctx.moveTo(motes[i].x, motes[i].y);
+              ctx.lineTo(motes[j].x, motes[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+        raf = requestAnimationFrame(drawHolo);
+      }
+
+      window.visionOSBoot = {
+        update(payload) {
+          const p = Math.max(0, Math.min(100, Number(payload?.progress ?? 0)));
+          progress.style.width = p + '%';
+          progressbar.setAttribute('aria-valuenow', String(Math.round(p)));
+          if (payload?.status) status.textContent = payload.status;
+          detail.textContent = payload?.detail || '';
+        },
+        complete() {
+          boot.classList.add('fade-out');
+        }
+      };
+
+      resizeHolo();
+      window.addEventListener('resize', resizeHolo);
+      raf = requestAnimationFrame(drawHolo);
+    })();
+  </script>
+</body>
+</html>
