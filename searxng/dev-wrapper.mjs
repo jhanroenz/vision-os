@@ -52,8 +52,16 @@ try {
   await ensureSearxng({ root });
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  process.exit(1);
+  const isTauriDev = npmScript === 'tauri:dev:raw';
+  if (isTauriDev) {
+    console.warn(
+      'SearXNG is not available — continuing native dev startup. Web search may fail until SearXNG is running.',
+    );
+    console.warn(message);
+  } else {
+    console.error(message);
+    process.exit(1);
+  }
 }
 
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';

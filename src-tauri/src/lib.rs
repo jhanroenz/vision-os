@@ -4,7 +4,7 @@ use backend::{
     manage_backend, navigate_main_window, on_run_event, show_startup_error, show_startup_loading,
     start_packaged_backend, StartupReporter, BACKEND_PORT,
 };
-use tauri::{include_image, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{include_image, AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
 
 const WINDOW_ICON: tauri::image::Image<'static> = include_image!("icons/icon.png");
 
@@ -56,11 +56,7 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_title("VisionOS");
                 let _ = window.set_icon(WINDOW_ICON.clone());
-
-                if cfg!(debug_assertions) {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
+                show_dev_main_window(&window);
             }
 
             if !cfg!(debug_assertions) {
@@ -97,6 +93,29 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|app_handle, event| {
+            if cfg!(debug_assertions) {
+                if let RunEvent::Ready = event {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        show_dev_main_window(&window);
+                    }
+                }
+            }
             on_run_event(app_handle, &event);
         });
 }
+
+#[cfg(debug_assertions)]
+fn show_dev_main_window(window: &tauri::WebviewWindow) {
+    if let Err(e) = window.center() {
+        log::warn!("Failed to center main window: {e}");
+    }
+    if let Err(e) = window.show() {
+        log::error!("Failed to show main window: {e}");
+    }
+    if let Err(e) = window.set_focus() {
+        log::warn!("Failed to focus main window: {e}");
+    }
+}
+
+#[cfg(not(debug_assertions))]
+fn show_dev_main_window(_window: &tauri::WebviewWindow) {}

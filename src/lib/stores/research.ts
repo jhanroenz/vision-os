@@ -198,6 +198,10 @@ export const research = {
                 }
                 next.activeId = streamSessionId || next.activeId;
               }
+              if (event.type === 'document_type') {
+                next.currentAction = `Formatting as ${String(event.templateLabel ?? 'report')}…`;
+                next = pushActivity(next, 'document_type', next.currentAction);
+              }
               if (event.type === 'status') {
                 next.currentAction = String(event.message ?? '');
                 next = pushActivity(next, 'status', next.currentAction || 'Working...');

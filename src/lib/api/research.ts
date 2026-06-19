@@ -32,10 +32,58 @@ export interface ResearchMediaAsset {
   title?: string;
   caption?: string;
   provider?: string;
+  placement?: 'inline' | 'gallery';
+}
+
+export interface ResearchDocumentFigure {
+  mediaId: string;
+  caption?: string;
+  type?: 'image' | 'video';
+}
+
+export interface ResearchDocumentSection {
+  id: string;
+  title: string;
+  level: number;
+  bodyMarkdown: string;
+  figures?: ResearchDocumentFigure[];
+}
+
+export interface ResearchDocument {
+  documentType: string;
+  templateLabel: string;
+  title: string;
+  deck?: string;
+  generatedAt: number;
+  tier?: string;
+  sections: ResearchDocumentSection[];
+  stats?: {
+    sources?: number;
+    images?: number;
+    videos?: number;
+    inlineFigures?: number;
+  };
+}
+
+export interface ResearchClassification {
+  documentType: string;
+  subjectLabel: string;
+  confidence: number;
 }
 
 export interface ResearchReport {
   media?: ResearchMediaAsset[];
+  document?: ResearchDocument | null;
+  classification?: ResearchClassification | null;
+  stats?: {
+    searches?: number;
+    sources?: number;
+    pagesFetched?: number;
+    images?: number;
+    videos?: number;
+    inlineFigures?: number;
+    documentType?: string;
+  };
   [key: string]: unknown;
 }
 

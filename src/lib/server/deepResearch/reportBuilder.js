@@ -6,10 +6,12 @@
  *   plan: object,
  *   memory: ReturnType<typeof import('./sessionMemory.js').createSessionMemory>,
  *   markdown: string,
+ *   document?: object,
+ *   classification?: { documentType: string, subjectLabel: string, confidence: number },
  * }} ctx
  */
 export function buildResearchReportJson(ctx) {
-  const { sessionId, userQuery, tier, plan, memory, markdown } = ctx;
+  const { sessionId, userQuery, tier, plan, memory, markdown, document, classification } = ctx;
 
   const citations = memory.sources.map((s, i) => ({
     refId: String(i + 1),
@@ -19,7 +21,9 @@ export function buildResearchReportJson(ctx) {
     author: s.author,
     date: s.publishedAt,
     reliabilityScore: s.reliabilityScore,
-    usedInSections: [],
+    usedInSections: document?.sections
+      ?.filter((sec) => String(sec.bodyMarkdown ?? "").includes(s.title))
+      .map((sec) => sec.id) ?? [],
   }));
 
   return {
@@ -28,6 +32,8 @@ export function buildResearchReportJson(ctx) {
     tier,
     plan,
     markdown,
+    document: document ?? null,
+    classification: classification ?? null,
     sources: memory.sources,
     claims: memory.claims,
     contradictions: memory.contradictions,
@@ -39,35 +45,8 @@ export function buildResearchReportJson(ctx) {
       pagesFetched: memory.pagesFetched,
       images: memory.media.filter((m) => m.type === "image").length,
       videos: memory.media.filter((m) => m.type === "video").length,
+      inlineFigures: document?.stats?.inlineFigures ?? 0,
+      documentType: document?.documentType ?? classification?.documentType ?? "investigative",
     },
   };
-}
-
-/**
- * Inject inline media markers after Key Findings for first few media assets.
- * @param {string} markdown
- * @param {Array<object>} media
- */
-export function injectMediaMarkers(markdown, media) {
-  let result = String(markdown ?? "");
-  const gallerySection = "# Media Gallery";
-  const idx = result.indexOf(gallerySection);
-
-  const markers = media
-    .slice(0, 6)
-    .map((m) => `<!-- research:media id=${m.id} type=${m.type} -->`)
-    .join("\n");
-
-  if (idx >= 0 && markers) {
-    result =
-      result.slice(0, idx + gallerySection.length) +
-      "\n\n" +
-      markers +
-      "\n" +
-      result.slice(idx + gallerySection.length);
-  } else if (markers) {
-    result += `\n\n# Media Gallery\n\n${markers}\n`;
-  }
-
-  return result;
 }

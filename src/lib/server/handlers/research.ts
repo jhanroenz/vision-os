@@ -1,4 +1,3 @@
-import { streamDeepResearch } from '../deepResearch/orchestrator.js';
 import {
   getResearchSession,
   listResearchSessions,
@@ -69,6 +68,7 @@ export async function stream(request: Request) {
   const streamThreadId = 'research:live';
 
   return sse(async (send) => {
+    const { streamDeepResearch } = await import('../deepResearch/orchestrator.js');
     registerRateLimitStreamEmitter(streamThreadId, send);
     try {
       await runWithAgentThread(streamThreadId, async () => {

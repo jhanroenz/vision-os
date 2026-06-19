@@ -17,7 +17,11 @@ export function resolveApiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
   if (typeof window === 'undefined') return normalized;
   if (onBundledBackendOrigin()) return normalized;
-  if (isTauriShell()) return `${PACKAGED_BACKEND_ORIGIN}${normalized}`;
+  if (isTauriShell()) {
+    // tauri dev loads Vite/SvelteKit on :5173 — API is same-origin, not the packaged Node port.
+    if (import.meta.env.DEV) return normalized;
+    return `${PACKAGED_BACKEND_ORIGIN}${normalized}`;
+  }
   return normalized;
 }
 

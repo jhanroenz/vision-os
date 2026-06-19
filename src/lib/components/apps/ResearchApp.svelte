@@ -1,20 +1,30 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { research } from '$lib/stores/research';
-  import ChatMessageContent from '$lib/components/chat/ChatMessageContent.svelte';
+  import ResearchMagazineDocument from '$lib/components/research/ResearchMagazineDocument.svelte';
   import { openResearchImageViewer, openResearchVideoPlayer } from '$lib/apps/registry';
+  import { exportResearchPdf } from '$lib/utils/exportResearchPdf';
   import type { ResearchMediaAsset, ResearchTier } from '$lib/api/research';
   import '$lib/styles/research.css';
+  import '$lib/styles/research-document.css';
 
   let query = $state('');
   let renamingId = $state('');
   let renameValue = $state('');
+  let exportingPdf = $state(false);
+  let exportStatus = $state('');
+  let documentRoot = $state<HTMLElement | null>(null);
 
-  const state = $derived($research);
-  const active = $derived(state.active);
-  const mediaItems = $derived(state.media ?? []);
-  const imageItems = $derived(mediaItems.filter((item) => item.type === 'image'));
-  const videoItems = $derived(mediaItems.filter((item) => item.type === 'video'));
+  const researchState = $derived($research);
+  const active = $derived(researchState.active);
+  const mediaItems = $derived(researchState.media ?? []);
+  const galleryItems = $derived(mediaItems.filter((item) => item.placement !== 'inline'));
+  const imageItems = $derived(galleryItems.filter((item) => item.type === 'image'));
+  const videoItems = $derived(galleryItems.filter((item) => item.type === 'video'));
+
+  const canExportPdf = $derived(
+    Boolean(active?.reportMarkdown && !researchState.running && (active.status === 'done' || active.completedAt))
+  );
 
   const tiers: ResearchTier[] = ['quick', 'standard', 'deep', 'exhaustive'];
 
@@ -50,6 +60,28 @@
   function openVideo(item: ResearchMediaAsset) {
     openResearchVideoPlayer(item);
   }
+
+  async function handleExportPdf() {
+    if (!documentRoot || !active || exportingPdf) return;
+    const target = documentRoot.querySelector('[data-research-document]');
+    if (!target || !(target instanceof HTMLElement)) return;
+    exportingPdf = true;
+    exportStatus = 'Starting export…';
+    try {
+      await exportResearchPdf({
+        element: target,
+        title: active.reportJson?.document?.title ?? active.title ?? active.userQuery,
+        onProgress: (msg) => {
+          exportStatus = msg;
+        }
+      });
+      exportStatus = '';
+    } catch (err) {
+      exportStatus = err instanceof Error ? err.message : 'PDF export failed';
+    } finally {
+      exportingPdf = false;
+    }
+  }
 </script>
 
 <div class="research-app">
@@ -59,11 +91,11 @@
       <button class="chat-toolbar-btn" onclick={() => research.clearActive()}>+ New</button>
     </div>
     <div class="research-session-list">
-      {#if state.sessions.length === 0}
+      {#if researchState.sessions.length === 0}
         <p class="research-empty-list">No research sessions yet.</p>
       {:else}
-        {#each state.sessions as item (item.id)}
-          <div class="research-session-item" class:active={state.activeId === item.id}>
+        {#each researchState.sessions as item (item.id)}
+          <div class="research-session-item" class:active={researchState.activeId === item.id}>
             <button class="research-session-open" onclick={() => research.open(item.id)}>
               {#if renamingId === item.id}
                 <input
@@ -100,33 +132,49 @@
   <section class="research-main">
     <header class="research-header">
       <h2>{active?.title || 'Deep research'}</h2>
-      <div class="research-tier">
-        <label for="research-tier-select">Tier</label>
-        <select
-          id="research-tier-select"
-          value={state.tier}
-          disabled={state.running}
-          title="Research depth"
-          onchange={(e) => research.setTier(e.currentTarget.value as ResearchTier)}
-        >
-          {#each tiers as tier}
-            <option value={tier}>{tier}</option>
-          {/each}
-        </select>
+      <div class="research-document-toolbar">
+        {#if canExportPdf}
+          <button
+            class="research-export-pdf-btn"
+            disabled={exportingPdf}
+            onclick={() => void handleExportPdf()}
+            title="Export research document as PDF"
+          >
+            {exportingPdf ? 'Exporting…' : 'Export PDF'}
+          </button>
+        {/if}
+        <div class="research-tier">
+          <label for="research-tier-select">Tier</label>
+          <select
+            id="research-tier-select"
+            value={researchState.tier}
+            disabled={researchState.running}
+            title="Research depth"
+            onchange={(e) => research.setTier(e.currentTarget.value as ResearchTier)}
+          >
+            {#each tiers as tier}
+              <option value={tier}>{tier}</option>
+            {/each}
+          </select>
+        </div>
       </div>
     </header>
 
+    {#if exportStatus}
+      <p class="research-export-status">{exportStatus}</p>
+    {/if}
+
     <div class="research-content">
-      {#if state.error}
-        <p class="research-error">{state.error}</p>
+      {#if researchState.error}
+        <p class="research-error">{researchState.error}</p>
       {/if}
 
-      {#if state.running}
+      {#if researchState.running}
         <div class="research-activity">
-          <p class="research-activity-title">{state.currentAction || 'Researching...'}</p>
-          {#if state.activity.length > 0}
+          <p class="research-activity-title">{researchState.currentAction || 'Researching...'}</p>
+          {#if researchState.activity.length > 0}
             <ul>
-              {#each state.activity.slice(-10) as item (item.id)}
+              {#each researchState.activity.slice(-10) as item (item.id)}
                 <li>{item.text}</li>
               {/each}
             </ul>
@@ -135,36 +183,25 @@
       {/if}
 
       {#if active?.userQuery}
-        <article class="chat-message-row user">
-          <div class="chat-message-avatar" aria-hidden="true">◉</div>
-          <div class="chat-message-body">
-            <div class="chat-message-meta"><span class="chat-message-author">You</span></div>
-            <div class="chat-message-bubble">{active.userQuery}</div>
-          </div>
-        </article>
-      {:else if state.running && state.pendingQuery}
-        <article class="chat-message-row user">
-          <div class="chat-message-avatar" aria-hidden="true">◉</div>
-          <div class="chat-message-body">
-            <div class="chat-message-meta"><span class="chat-message-author">You</span></div>
-            <div class="chat-message-bubble">{state.pendingQuery}</div>
-          </div>
-        </article>
+        <div class="research-document-query">
+          <div class="research-document-query-label">Research query</div>
+          {active.userQuery}
+        </div>
+      {:else if researchState.running && researchState.pendingQuery}
+        <div class="research-document-query">
+          <div class="research-document-query-label">Research query</div>
+          {researchState.pendingQuery}
+        </div>
       {/if}
 
       {#if active?.reportMarkdown}
-        <article class="chat-message-row assistant">
-          <div class="chat-message-avatar" aria-hidden="true">◎</div>
-          <div class="chat-message-body">
-            <div class="chat-message-meta"><span class="chat-message-author">Jarvis Research</span></div>
-            <div class="chat-message-bubble chat-message-bubble--markdown">
-              <ChatMessageContent content={active.reportMarkdown} markdown />
-            </div>
-          </div>
-        </article>
+        <div bind:this={documentRoot}>
+          <ResearchMagazineDocument session={active} media={mediaItems} onOpenVideo={openVideo} />
+        </div>
 
-        {#if mediaItems.length > 0}
-          <section class="research-media-gallery">
+        {#if galleryItems.length > 0}
+          <section class="research-media-gallery" data-exclude-from-pdf>
+            <p class="research-media-archive-label">Media archive</p>
             {#if videoItems.length > 0}
               <div class="research-gallery-section">
                 <h4>Videos</h4>
@@ -205,7 +242,7 @@
             {/if}
           </section>
         {/if}
-      {:else if !state.running}
+      {:else if !researchState.running}
         <div class="research-placeholder">Start a topic to generate a cited deep research report.</div>
       {/if}
     </div>
@@ -223,9 +260,18 @@
           }
         }}
       ></textarea>
-      <button class="chat-send-btn" disabled={state.running || !query.trim()} onclick={() => void submit()}>
-        {state.running ? 'Researching...' : 'Run Research'}
+      <button class="chat-send-btn" disabled={researchState.running || !query.trim()} onclick={() => void submit()}>
+        {researchState.running ? 'Researching...' : 'Run Research'}
       </button>
     </footer>
   </section>
 </div>
+
+<style>
+  .research-export-status {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 0 16px 8px;
+    margin: 0;
+  }
+</style>

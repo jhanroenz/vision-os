@@ -101,6 +101,51 @@ Then open a new terminal and run: npm run tauri:dev
 `);
 }
 
+function isPortInUse(port) {
+  if (process.platform === 'win32') {
+    const result = spawnSync(
+      'powershell',
+      [
+        '-NoProfile',
+        '-Command',
+        `(Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | Measure-Object).Count`,
+      ],
+      { encoding: 'utf8', windowsHide: true },
+    );
+    const count = Number.parseInt(String(result.stdout ?? '').trim(), 10);
+    return Number.isFinite(count) && count > 0;
+  }
+
+  const result = spawnSync('lsof', [`-iTCP:${port}`, '-sTCP:LISTEN'], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+    windowsHide: true,
+  });
+  return result.status === 0 && Boolean(result.stdout?.trim());
+}
+
+function printPortInUseHelp(port) {
+  console.error(`
+Port ${port} is already in use — Tauri dev cannot start Vite on that port.
+
+Stop the other process first, then run again:
+
+  Windows:
+    Get-NetTCPConnection -LocalPort ${port} | Select-Object OwningProcess
+    Stop-Process -Id <PID> -Force
+
+  Or close any existing "npm run dev" / "npm run tauri:dev" terminal.
+
+Web-only dev uses the same port (${port}). Only one dev server can run at a time.
+`);
+}
+
+const DEV_VITE_PORT = 5173;
+if (isPortInUse(DEV_VITE_PORT)) {
+  printPortInUseHelp(DEV_VITE_PORT);
+  process.exit(1);
+}
+
 const cargo = findCargo();
 if (!cargo) {
   printRustInstallHelp();

@@ -10,12 +10,11 @@ import { runResearchSearch, planResearchSearchEngines } from "./searchRunner.js"
 import { attachPageText } from "./sourceStore.js";
 import { extractClaimsFromSource, detectSimpleContradictions } from "./extractor.js";
 import { harvestMediaFromHtml } from "./mediaHarvester.js";
+import { classifyResearchTopic } from "./classifyResearchTopic.js";
 import { synthesizeResearchReport } from "./synthesizer.js";
 import { cleanResearchReportMarkdown } from "./reportMarkdown.js";
-import {
-  buildResearchReportJson,
-  injectMediaMarkers,
-} from "./reportBuilder.js";
+import { assembleResearchDocument } from "./documentAssembler.js";
+import { buildResearchReportJson } from "./reportBuilder.js";
 import {
   createResearchSession,
   updateResearchSession,
@@ -207,7 +206,25 @@ export async function* streamDeepResearch({
     search_count: memory.searchesPerformed,
   });
 
-  yield { type: "status", phase: "research", message: "Synthesizing report…" };
+  yield { type: "status", phase: "research", message: "Classifying topic…" };
+
+  const classification = await classifyResearchTopic(userQuery, {
+    sources: memory.sources,
+  });
+
+  yield {
+    type: "document_type",
+    documentType: classification.documentType,
+    templateLabel: classification.template.label,
+    subjectLabel: classification.subjectLabel,
+    confidence: classification.confidence,
+  };
+
+  yield {
+    type: "status",
+    phase: "research",
+    message: `Formatting as ${classification.template.label}…`,
+  };
 
   let markdown = await synthesizeResearchReport({
     userQuery,
@@ -215,10 +232,27 @@ export async function* streamDeepResearch({
     claims: memory.claims,
     contradictions: memory.contradictions,
     brainBaseline,
+    documentType: classification.documentType,
+    template: classification.template,
+    media: memory.media,
+    tier: normalizedTier,
   });
 
   markdown = cleanResearchReportMarkdown(markdown);
-  markdown = injectMediaMarkers(markdown, memory.media);
+
+  const assembled = assembleResearchDocument({
+    userQuery,
+    subjectLabel: classification.subjectLabel,
+    documentType: classification.documentType,
+    templateLabel: classification.template.label,
+    markdown,
+    media: memory.media,
+    sources: memory.sources,
+    tier: normalizedTier,
+  });
+
+  markdown = assembled.markdown;
+  memory.media = assembled.media;
 
   const reportJson = buildResearchReportJson({
     sessionId,
@@ -227,6 +261,12 @@ export async function* streamDeepResearch({
     plan,
     memory,
     markdown,
+    document: assembled.document,
+    classification: {
+      documentType: classification.documentType,
+      subjectLabel: classification.subjectLabel,
+      confidence: classification.confidence,
+    },
   });
 
   updateResearchSession(sessionId, {
