@@ -1,9 +1,12 @@
 mod backend;
 
 use backend::{
-    manage_backend, navigate_main_window, on_run_event, schedule_dev_ui_navigation,
-    show_startup_error, show_startup_loading, start_packaged_backend, StartupReporter, BACKEND_PORT,
+    manage_backend, navigate_main_window, on_run_event, show_startup_error, show_startup_loading,
+    start_packaged_backend, StartupReporter, BACKEND_PORT,
 };
+
+#[cfg(debug_assertions)]
+use backend::schedule_dev_ui_navigation;
 use tauri::{include_image, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 const WINDOW_ICON: tauri::image::Image<'static> = include_image!("icons/icon.png");
@@ -45,7 +48,8 @@ pub fn run() {
         .setup(|app| {
             manage_backend(app);
 
-            if cfg!(debug_assertions) {
+            #[cfg(debug_assertions)]
+            {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Info)
@@ -57,19 +61,12 @@ pub fn run() {
                 let _ = window.set_title("VisionOS");
                 let _ = window.set_icon(WINDOW_ICON.clone());
 
-                if cfg!(debug_assertions) {
-                    let handle = app.handle().clone();
-                    match show_startup_loading(&handle) {
-                        Ok(()) => schedule_dev_ui_navigation(&handle),
-                        Err(e) => {
-                            log::warn!("Dev boot splash failed ({e}); opening dev UI directly");
-                            show_dev_main_window(&window);
-                        }
-                    }
-                }
+                #[cfg(debug_assertions)]
+                setup_dev_boot(app, &window);
             }
 
-            if !cfg!(debug_assertions) {
+            #[cfg(not(debug_assertions))]
+            {
                 let handle = app.handle().clone();
                 let reporter = StartupReporter::new(handle.clone());
                 show_startup_loading(&handle)?;
@@ -108,6 +105,18 @@ pub fn run() {
 }
 
 #[cfg(debug_assertions)]
+fn setup_dev_boot(app: &tauri::App, window: &tauri::WebviewWindow) {
+    let handle = app.handle().clone();
+    match show_startup_loading(&handle) {
+        Ok(()) => schedule_dev_ui_navigation(&handle),
+        Err(e) => {
+            log::warn!("Dev boot splash failed ({e}); opening dev UI directly");
+            show_dev_main_window(window);
+        }
+    }
+}
+
+#[cfg(debug_assertions)]
 fn show_dev_main_window(window: &tauri::WebviewWindow) {
     if let Err(e) = window.center() {
         log::warn!("Failed to center main window: {e}");
@@ -119,6 +128,3 @@ fn show_dev_main_window(window: &tauri::WebviewWindow) {
         log::warn!("Failed to focus main window: {e}");
     }
 }
-
-#[cfg(not(debug_assertions))]
-fn show_dev_main_window(_window: &tauri::WebviewWindow) {}
