@@ -19,10 +19,14 @@ import ResearchVideoPlayerApp from '$lib/components/apps/ResearchVideoPlayerApp.
 import ConversationApp from '$lib/components/apps/ConversationApp.svelte';
 import ConversationWorkspaceApp from '$lib/components/apps/ConversationWorkspaceApp.svelte';
 import ConversationTranscriptApp from '$lib/components/apps/ConversationTranscriptApp.svelte';
+import UserAppsManagerApp from '$lib/components/apps/UserAppsManagerApp.svelte';
 import { windows } from '$lib/stores/windows';
+import type { ComposerMode } from '$lib/stores/chatSession';
+import { userAppsStore } from '$lib/stores/userApps';
+import { userAppToDefinition } from '$lib/api/userApps';
 import type { ResearchMediaAsset } from '$lib/api/research';
 
-export const APPS: AppDefinition[] = [
+export const BUILTIN_APPS: AppDefinition[] = [
   {
     id: 'welcome',
     name: 'Welcome',
@@ -86,6 +90,14 @@ export const APPS: AppDefinition[] = [
     defaultWidth: 900,
     defaultHeight: 640,
     component: SettingsApp
+  },
+  {
+    id: 'userAppsManager',
+    name: 'My Apps',
+    icon: '🧩',
+    defaultWidth: 720,
+    defaultHeight: 520,
+    component: UserAppsManagerApp
   },
   {
     id: 'snake',
@@ -190,13 +202,36 @@ export const APPS: AppDefinition[] = [
   }
 ];
 
+/** Built-in launcher apps (legacy export). */
+export const APPS = BUILTIN_APPS;
+
 export function getAppById(id: string): AppDefinition | undefined {
-  return APPS.find((a) => a.id === id);
+  const builtin = BUILTIN_APPS.find((a) => a.id === id);
+  if (builtin) return { ...builtin, kind: 'builtin' };
+  const user = userAppsStore.findById(id);
+  if (user) return userAppToDefinition(user);
+  return undefined;
 }
+
+export function getPublishedUserApps(): AppDefinition[] {
+  return userAppsStore.getPublishedDefinitions();
+}
+
+export function getDraftUserApps(): AppDefinition[] {
+  return userAppsStore.getDraftDefinitions();
+}
+
+export type OpenChatOptions = {
+  conversationId?: string;
+  composerMode?: ComposerMode;
+};
 
 export function openApp(appId: string, options?: { props?: Record<string, unknown>; title?: string }) {
   if (appId === 'chat') {
-    openChat(options?.props?.initialConversationId as string | undefined);
+    openChat({
+      conversationId: options?.props?.initialConversationId as string | undefined,
+      composerMode: options?.props?.initialComposerMode as ComposerMode | undefined
+    });
     return;
   }
   const app = getAppById(appId);
@@ -204,24 +239,41 @@ export function openApp(appId: string, options?: { props?: Record<string, unknow
   windows.open({
     appId: app.id,
     title: options?.title ?? app.name,
-    width: app.defaultWidth,
-    height: app.defaultHeight,
-    props: options?.props
+    width: app.defaultWidth ?? 640,
+    height: app.defaultHeight ?? 480,
+    props:
+      app.kind === 'user'
+        ? { userAppId: app.id, slug: app.slug, ...options?.props }
+        : options?.props
   });
 }
 
-export function openChat(conversationId?: string) {
+export function openChat(conversationIdOrOptions?: string | OpenChatOptions) {
   const app = getAppById('chat');
   if (!app) return;
-  const id = normalizeConversationId(conversationId);
+
+  const options: OpenChatOptions =
+    typeof conversationIdOrOptions === 'string'
+      ? { conversationId: conversationIdOrOptions }
+      : (conversationIdOrOptions ?? {});
+
+  const props: Record<string, unknown> = {};
+  const conversationId = normalizeConversationId(options.conversationId);
+  if (conversationId) props.initialConversationId = conversationId;
+  if (options.composerMode) props.initialComposerMode = options.composerMode;
+
   windows.open({
     id: 'chat-main',
     appId: 'chat',
     title: 'Chat',
     width: app.defaultWidth,
     height: app.defaultHeight,
-    props: id ? { initialConversationId: id } : undefined
+    props: Object.keys(props).length > 0 ? props : undefined
   });
+}
+
+export function openAppBuilderChat() {
+  openChat({ composerMode: 'appBuilder' });
 }
 
 export function openNotepad(filePath?: string) {

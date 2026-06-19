@@ -14,6 +14,17 @@ import {
 import { getConversationWorkspaceRoot } from "./conversationWorkspace.js";
 import { getConversationContext } from "./context.js";
 import { getThreadCwd } from "./workspace.js";
+import {
+  buildCursorAppBuilderPrefix,
+  shouldUseCursorAppBuilder,
+  wasAppRegisteredInToolEvents,
+} from "./userApps/cursorAppBuilder.js";
+import {
+  detectAppSourceFromToolEvents,
+  parsePublishSlugFromShellCommand,
+} from "./userApps/register.js";
+import { getUserAppBySlug } from "./userApps/repository.js";
+import { isAppBuilderComposerMode } from "./composerMode.js";
 
 const ASK_MODE_PREFIX =
   "Read-only mode: answer questions and explore the codebase. Do not create, edit, or delete files unless the user explicitly asks.\n\n";
@@ -314,10 +325,14 @@ function resolveCursorWorkspaceCwd(conversation) {
   return path.resolve(config.workspaceDir, relative);
 }
 
-function buildCursorPrompt(message, askMode) {
+function buildCursorPrompt(message, { askMode = false, composerMode = "chat" } = {}) {
   const text = String(message ?? "").trim();
   if (!text) throw new Error("Message is required");
-  return askMode ? `${ASK_MODE_PREFIX}${text}` : text;
+  if (askMode) return `${ASK_MODE_PREFIX}${text}`;
+  if (shouldUseCursorAppBuilder(text, composerMode, askMode)) {
+    return `${buildCursorAppBuilderPrefix(text)}\n\nUser request:\n${text}`;
+  }
+  return text;
 }
 
 function buildLocalAgentOptions(cwd) {
@@ -483,6 +498,7 @@ export async function* streamCursorAgentTurn({
   threadId,
   conversation,
   askMode = false,
+  composerMode = "chat",
 }) {
   const apiKey = resolveLlmApiKey("cursor");
   if (!apiKey) {
@@ -491,8 +507,10 @@ export async function* streamCursorAgentTurn({
     );
   }
 
+  const appBuilderMode = isAppBuilderComposerMode(composerMode);
+  const appBuilderFlow = shouldUseCursorAppBuilder(message, composerMode, askMode);
   const cwd = resolveCursorWorkspaceCwd(conversation);
-  const prompt = buildCursorPrompt(message, askMode);
+  const prompt = buildCursorPrompt(message, { askMode, composerMode });
   const toolEvents = [];
   const requestedModel = config.llm.model;
   const modelSelection = buildCursorModelSelection(requestedModel);
@@ -500,14 +518,17 @@ export async function* streamCursorAgentTurn({
 
   yield {
     type: "status",
-    phase: "cursor",
-    message: "Running via Cursor Composer…",
+    phase: appBuilderFlow ? "app-builder" : "cursor",
+    message: appBuilderFlow
+      ? "App Builder via Cursor Composer…"
+      : "Running via Cursor Composer…",
   };
 
   yield {
     type: "turn_intent",
-    profile: "chat",
+    profile: appBuilderFlow ? "appBuilder" : "chat",
     casualChat: false,
+    source: appBuilderFlow ? "cursor-app-builder" : "cursor",
   };
 
   if (modelSelection._requested && modelSelection._requested !== effectiveModel) {
@@ -549,10 +570,57 @@ export async function* streamCursorAgentTurn({
           yield step.value;
         }
 
+        let finalReply = reply;
+        if (appBuilderFlow) {
+          let registeredSlug = null;
+          for (const event of toolEvents) {
+            const name = String(event?.name ?? "").toLowerCase();
+            if (event.type === "tool_call" && (name === "run_bash" || name === "shell")) {
+              const cmd = event.args?.command ?? event.args?.cmd ?? "";
+              registeredSlug = parsePublishSlugFromShellCommand(cmd) ?? registeredSlug;
+            }
+          }
+          const { existingSlug } = detectAppSourceFromToolEvents(toolEvents);
+          const slug = registeredSlug ?? existingSlug;
+          const registered = wasAppRegisteredInToolEvents(toolEvents);
+
+          if (registered && slug) {
+            const app = getUserAppBySlug(slug);
+            if (app?.status === "published") {
+              yield {
+                type: "user_app_published",
+                slug,
+                appId: app.id,
+              };
+              yield {
+                type: "status",
+                phase: "app-builder",
+                message: `Registered in VisionOS: ${app.name}`,
+              };
+              if (!finalReply.includes("Start menu") && !finalReply.includes("My Apps")) {
+                finalReply += `\n\n**Installed in VisionOS** — open **Start menu → My Apps → ${app.name}**.`;
+              }
+            }
+          } else if (existingSlug) {
+            yield {
+              type: "status",
+              phase: "app-builder",
+              message: `App built at apps/${existingSlug}/ but not registered — run register_user_app or publish API`,
+            };
+            if (!finalReply.includes("register_user_app") && !finalReply.includes("/publish")) {
+              finalReply +=
+                `\n\n**Not registered yet** — run \`register_user_app\` (local agent) or ` +
+                `\`curl -s -X POST "http://127.0.0.1:${config.port}/api/user-apps/${existingSlug}/publish"\` ` +
+                `so the app appears in **My Apps**.`;
+            }
+          }
+        }
+
         addUiMessage(conversation, {
           role: "assistant",
-          content: reply,
+          content: finalReply,
           ...(askMode ? { ask: true } : {}),
+          ...(appBuilderFlow ? { appBuilder: true } : {}),
         });
         conversation.cwd = getThreadCwd(threadId);
         await saveConversation(conversation);
@@ -574,7 +642,7 @@ export async function* streamCursorAgentTurn({
         yield {
           type: "message",
           node: "agent",
-          content: reply,
+          content: finalReply,
           cwd: getThreadCwd(threadId),
           workspace: config.workspaceDir,
           conversationId: threadId,

@@ -211,6 +211,7 @@ import {
   assessTurnIntent,
   buildIntentAssessmentBrief,
   buildAskComposerTurnIntent,
+  buildAppBuilderComposerTurnIntent,
   setTurnIntent,
   getTurnIntent,
   isFollowUpProjectTurn,
@@ -229,6 +230,7 @@ import { buildIntentAssessmentContext } from "./intentAssessment.js";
 import {
   normalizeComposerMode,
   isAskComposerMode,
+  isAppBuilderComposerMode,
 } from "./composerMode.js";
 import { isCursorProvider } from "./llmProviders.js";
 import { streamCursorAgentTurn } from "./cursorAgent.js";
@@ -1575,6 +1577,32 @@ async function* finalizeParallelToolResult(ctx, prepared, toolOutcome) {
     minified: storedResult !== result,
   });
   yield resultEvent;
+  if (toolRequest.name === "publish_user_app") {
+    try {
+      const parsed = JSON.parse(String(result));
+      if (parsed?.event?.type === "user_app_published") {
+        yield parsed.event;
+      } else if (parsed?.published && parsed?.app?.slug) {
+        yield {
+          type: "user_app_published",
+          slug: parsed.app.slug,
+          appId: parsed.app.id ?? parsed.app.slug,
+        };
+      }
+    } catch {
+      // ignore non-JSON tool output
+    }
+  }
+  if (toolRequest.name === "import_user_app") {
+    try {
+      const parsed = JSON.parse(String(result));
+      if (parsed?.event?.type === "user_app_published") {
+        yield parsed.event;
+      }
+    } catch {
+      // ignore non-JSON tool output
+    }
+  }
   await syncPlanFreezeAfterTool(threadId, toolRequest.name, displayResult);
   syncThreadVerifyFromToolResult(threadId, toolRequest.name, statusResult, {
     writtenPath: normalizedArgs?.path ?? normalizedArgs?.target_file ?? null,
@@ -2040,6 +2068,7 @@ export async function* agentEventsCore({
   const composerMode = normalizeComposerMode(mode);
   const commandMode = composerMode === "command";
   const askMode = isAskComposerMode(composerMode);
+  const appBuilderMode = isAppBuilderComposerMode(composerMode);
 
   const conversation = await getConversation(threadId, { createIfMissing: true });
 
@@ -2053,6 +2082,7 @@ export async function* agentEventsCore({
     content: message,
     ...(commandMode || shellWaiting ? { command: true } : {}),
     ...(askMode ? { ask: true } : {}),
+    ...(appBuilderMode ? { appBuilder: true } : {}),
     ...(shellWaiting ? { shellInput: true } : {}),
   });
 
@@ -2144,6 +2174,7 @@ export async function* agentEventsCore({
       threadId,
       conversation,
       askMode,
+      composerMode,
     });
     return;
   }
@@ -2195,6 +2226,12 @@ export async function* agentEventsCore({
       phase: "thinking",
       message: "Thinking…",
     };
+  } else if (appBuilderMode) {
+    yield {
+      type: "status",
+      phase: "app-builder",
+      message: "App Builder — planning your app…",
+    };
   } else {
     yield {
       type: "status",
@@ -2206,36 +2243,46 @@ export async function* agentEventsCore({
   const intentContext = await buildIntentAssessmentContext(conversation, threadId);
   const turnIntent = askMode
     ? buildAskComposerTurnIntent()
-    : await assessTurnIntent(message, intentContext);
-  setTurnIntent(threadId, turnIntent);
-  const minimalChat = turnIntent.casualChat;
+    : appBuilderMode
+      ? buildAppBuilderComposerTurnIntent()
+      : await assessTurnIntent(message, intentContext);
+  const { mentionsUserAppCreation } = await import("./userApps/userAppGuidance.js");
+  const resolvedIntent =
+    !askMode && !appBuilderMode && mentionsUserAppCreation(message)
+      ? buildAppBuilderComposerTurnIntent()
+      : turnIntent;
+  setTurnIntent(threadId, resolvedIntent);
+  const minimalChat = resolvedIntent.casualChat;
   const liteUi = minimalChat || askMode;
-  const codingTurn = isCodingProfile(turnIntent) && !askMode;
+  const effectiveAppBuilder = appBuilderMode || resolvedIntent.profile === "appBuilder";
+  const codingTurn = isCodingProfile(resolvedIntent) && !askMode && !effectiveAppBuilder;
   const stackProfile = liteUi
     ? askMode
       ? "research"
-      : "chat"
-    : resolveExecutionStackProfile(turnIntent.profile, message);
+      : effectiveAppBuilder
+        ? "appBuilder"
+        : "chat"
+    : resolveExecutionStackProfile(resolvedIntent.profile, message);
   const useTurnPacket =
     config.agent.loopV2 &&
     (codingTurn ||
-      turnIntent.profile === "explore" ||
+      resolvedIntent.profile === "explore" ||
       stackProfile === "explore");
 
   yield {
     type: "turn_intent",
     profile: stackProfile,
-    casualChat: turnIntent.casualChat,
+    casualChat: resolvedIntent.casualChat,
     askMode,
-    allowWebSearch: turnIntent.allowWebSearch,
-    saveToMemory: turnIntent.saveToMemory ?? false,
-    followUpProjectWork: turnIntent.followUpProjectWork ?? false,
-    source: turnIntent.source,
-    reason: turnIntent.reason,
-    actionSummary: turnIntent.actionSummary,
+    allowWebSearch: resolvedIntent.allowWebSearch,
+    saveToMemory: resolvedIntent.saveToMemory ?? false,
+    followUpProjectWork: resolvedIntent.followUpProjectWork ?? false,
+    source: resolvedIntent.source,
+    reason: resolvedIntent.reason,
+    actionSummary: resolvedIntent.actionSummary,
   };
 
-  if (turnIntent.workspaceMetaQuestion) {
+  if (resolvedIntent.workspaceMetaQuestion) {
     const reply = formatWorkspaceAnswer(threadId);
     addUiMessage(conversation, { role: "assistant", content: reply });
     conversation.cwd = getThreadCwd(threadId);
@@ -3377,6 +3424,14 @@ export async function* agentEventsCore({
         const interactive = analyzeBashCommand(cmd);
         if (interactive.blocked) {
           throw new Error(formatInteractiveBlockMessage(interactive));
+        }
+        const { isExternalAppServerCommand, shouldUseVisionOsAppPipeline, externalAppServerBlockMessage } =
+          await import("./userApps/appCreationPolicy.js");
+        if (
+          isExternalAppServerCommand(cmd) &&
+          shouldUseVisionOsAppPipeline(threadId, message, getTurnIntent)
+        ) {
+          throw new Error(externalAppServerBlockMessage());
         }
       }
 

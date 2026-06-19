@@ -16,6 +16,7 @@ const PROFILE_SUFFIX = {
   ask: `Mode: Q&A. Use web_search or recall_brain when needed. No file edits.`,
   research: `Mode: research. web_search once if useful; cite URLs.`,
   explore: `Mode: explore. Read/search codebase; no writes unless Jan switches to Agent mode.`,
+  appBuilder: `Mode: App Builder. Scaffold/publish user apps in workspace/apps/ only; register_user_app before done.`,
   code: `Mode: coding agent. Server enforces phases: awareness → plan (update_task_plan) → execute → verify.
 Output raw JSON {"tool":"name","args":{...}} for tools — no markdown fences. Plain text only on final handoff after verify passes.
 Context for this step is in the [TURN packet] user message — follow it.`,

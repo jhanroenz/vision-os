@@ -745,6 +745,11 @@ fn html_escape(text: &str) -> String {
 }
 
 pub fn navigate_main_window(app: &AppHandle, port: u16) -> Result<(), String> {
+    let url = format!("http://127.0.0.1:{port}/");
+    navigate_window_to_url(app, &url)
+}
+
+pub fn navigate_window_to_url(app: &AppHandle, url: &str) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
@@ -754,8 +759,7 @@ pub fn navigate_main_window(app: &AppHandle, port: u16) -> Result<(), String> {
     let _ = window.eval("window.visionOSBoot?.complete?.();");
     std::thread::sleep(Duration::from_millis(500));
 
-    let url = format!("http://127.0.0.1:{port}/");
-    let parsed = Url::parse(&url).map_err(|e| e.to_string())?;
+    let parsed = Url::parse(url).map_err(|e| e.to_string())?;
 
     if let Err(e) = window.navigate(parsed.clone()) {
         log::warn!("window.navigate failed ({e}); falling back to location.replace");
@@ -768,6 +772,27 @@ pub fn navigate_main_window(app: &AppHandle, port: u16) -> Result<(), String> {
     window.show().map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[cfg(debug_assertions)]
+const DEV_UI_URL: &str = "http://127.0.0.1:5173/";
+
+#[cfg(debug_assertions)]
+pub fn schedule_dev_ui_navigation(app: &AppHandle) {
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(3300));
+        let handle_for_nav = handle.clone();
+        let _ = handle.run_on_main_thread(move || {
+            if let Err(e) = navigate_window_to_url(&handle_for_nav, DEV_UI_URL) {
+                log::error!("Failed to open dev UI after boot splash: {e}");
+                if let Some(window) = handle_for_nav.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        });
+    });
 }
 
 fn kill_child(child: &mut Child) {

@@ -11,9 +11,10 @@
   interface Props {
     windowId?: string;
     initialConversationId?: string;
+    initialComposerMode?: ComposerMode;
   }
 
-  let { initialConversationId = '' }: Props = $props();
+  let { initialConversationId = '', initialComposerMode }: Props = $props();
 
   let selectedConversationId = $state('');
   let input = $state('');
@@ -29,8 +30,15 @@
   const modeLabels: Record<ComposerMode, string> = {
     chat: 'Agent',
     ask: 'Ask',
-    command: 'Command'
+    command: 'Command',
+    appBuilder: 'App Builder'
   };
+
+  const composerPlaceholder = $derived(
+    session?.composerMode === 'appBuilder'
+      ? 'Describe the app you want…'
+      : 'Message Jarvis...'
+  );
 
   const session = $derived(
     selectedConversationId
@@ -61,9 +69,10 @@
     Boolean(
       session &&
         (session.shellWaiting ||
-          (session.streaming && !session.streamText) ||
-          (session.activityLog.some((e) => e.status === 'active') && session.streaming) ||
-          (session.executionStackProfile !== 'chat' && session.streaming))
+          (session.streaming &&
+            (session.executionStackProfile !== 'chat' ||
+              !session.streamText ||
+              session.activityLog.length > 0)))
     )
   );
 
@@ -123,6 +132,11 @@
     ].join('|');
   }
 
+  function applyInitialComposerMode(conversationId: string) {
+    if (!initialComposerMode) return;
+    chatSession.setComposerMode(conversationId, initialComposerMode);
+  }
+
   async function selectConversation(id: string) {
     const normalized = String(id ?? '').trim();
     if (!normalized) return;
@@ -132,6 +146,7 @@
     prevShellWaiting = false;
     lastScrollSignature = '';
     await chatSession.load(normalized);
+    applyInitialComposerMode(normalized);
     await scrollThreadToBottom(true);
     await focusComposer();
   }
@@ -193,6 +208,11 @@
     const preferred = String(initialConversationId ?? '').trim();
     if (!preferred || preferred === selectedConversationId) return;
     void selectConversation(preferred);
+  });
+
+  $effect(() => {
+    if (!initialComposerMode || !selectedConversationId) return;
+    chatSession.setComposerMode(selectedConversationId, initialComposerMode);
   });
 
   $effect(() => {
@@ -372,8 +392,8 @@
                   </div>
                   {#if session.activityLog.length > 0}
                     <ul class="chat-agent-actions">
-                      {#each session.activityLog.slice(-6) as item (item.id)}
-                        <li>{item.text}</li>
+                      {#each session.activityLog.slice(-8) as item (item.id)}
+                        <li class="chat-agent-action chat-agent-action-{item.type}">{item.text}</li>
                       {/each}
                     </ul>
                   {/if}
@@ -399,7 +419,7 @@
               class="chat-composer-input"
               bind:this={composerInputEl}
               bind:value={input}
-              placeholder="Message Jarvis..."
+              placeholder={composerPlaceholder}
               rows="2"
               onkeydown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {

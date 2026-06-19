@@ -104,6 +104,17 @@ export const windows = {
     internal.update((ws) => removeTiledWindow(id, ws.filter((w) => w.id !== id)));
   },
 
+  closeByAppId(appId: string) {
+    internal.update((ws) => {
+      let next = ws;
+      for (const win of ws) {
+        if (win.appId !== appId) continue;
+        next = removeTiledWindow(win.id, next.filter((w) => w.id !== win.id));
+      }
+      return next;
+    });
+  },
+
   minimize(id: string) {
     internal.update((ws) =>
       relayoutTiledWindows(ws.map((w) => (w.id === id ? { ...w, minimized: true } : w)))

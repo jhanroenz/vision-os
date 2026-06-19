@@ -1,6 +1,6 @@
 {
     "name": "visionos",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "private": true,
     "type": "module",
     "engines": {
@@ -19,6 +19,7 @@
         "preview": "node build/index.js",
         "start": "node build/index.js",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+        "test:user-apps": "node --test scripts/test-user-apps.mjs",
         "tauri": "tauri",
         "tauri:dev": "node searxng/dev-wrapper.mjs tauri:dev:raw",
         "tauri:dev:raw": "node scripts/tauri-dev.mjs",

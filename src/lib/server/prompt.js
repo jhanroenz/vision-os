@@ -16,6 +16,7 @@ import {
 import { formatWorkspaceBlock } from "./workspaceMeta.js";
 import { sortToolsForPrompt } from "./tools/index.js";
 import { formatToolGuidanceLine } from "./toolGuidance.js";
+import { buildUserAppGuidanceBlock } from "./userApps/userAppGuidance.js";
 import {
   GEMMA_TOOL_ANCHOR,
   GEMMA_UI_COMPACT,
@@ -201,6 +202,37 @@ ${OPTIONAL_ANSWER_TOOLS_RULES}
 
 Tools:${toolDocs(tools)}
 
+${jsonToolFooter()}`;
+}
+
+/** App Builder — user-created VisionOS apps without shell rebuilds. */
+export function buildSystemPromptAppBuilder(
+  tools,
+  {
+    memories = [],
+    skills = [],
+    failures = [],
+    activeProject = null,
+    cwd = ".",
+    lockedProjectRoot = null,
+  } = {},
+) {
+  return `${IDENTITY_BLOCK}
+
+Memory index:${formatMemories(memories, activeProject)}
+Skills:${formatSkills(skills, activeProject)}
+${failureLessonsBlock(failures, activeProject)}
+${brainRecallBlock(activeProject)}
+
+${formatWorkspaceBlock(cwd, { activeProject, lockedProjectRoot })}
+
+${buildUserAppGuidanceBlock()}
+
+App Builder mode — use create_user_app → implement in workspace/apps/<slug>/ → register_user_app before claiming installed.
+Do not edit src/lib/components/apps/ or registry.ts. write_file/list_directory scoped to apps/ preferred.
+
+Tools:
+${toolDocs(tools) || "(none)"}
 ${jsonToolFooter()}`;
 }
 

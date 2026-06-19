@@ -37,6 +37,8 @@ import { createSearchFilesTool } from "./searchFilesTool.js";
 
 import { createCleanupStrayPathsTool } from "./cleanupStrays.js";
 
+import { USER_APP_TOOLS } from "./userAppTools.js";
+
 import { config } from "../config.js";
 
 import { CASUAL_CHAT_TOOLS, PROFILE_TOOL_SETS, ASK_MODE_TOOLS } from "../turnIntent.js";
@@ -67,6 +69,13 @@ export const TOOL_PROMPT_ORDER = [
   "recall_brain",
   "remember",
   "learn_skill",
+  "create_user_app",
+  "import_user_app",
+  "update_user_app_manifest",
+  "publish_user_app",
+  "list_user_apps",
+  "set_app_data",
+  "create_app_job",
 ];
 
 export function sortToolsForPrompt(tools) {
@@ -125,6 +134,8 @@ export function createTools(ctx = {}) {
     createLearnSkillTool(ctx),
 
     createRecallBrainTool(ctx),
+
+    ...USER_APP_TOOLS,
 
   ];
 

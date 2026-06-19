@@ -13,6 +13,24 @@ export function isTauriShell(): boolean {
   );
 }
 
+/** Packaged release serves the UI from the embedded backend port (not Vite). */
+export function isPackagedTauriShell(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    isTauriShell() &&
+    window.location.hostname === '127.0.0.1' &&
+    window.location.port === String(PACKAGED_BACKEND_PORT)
+  );
+}
+
+/**
+ * Release Tauri shows startup-boot.html in Rust before the main UI loads.
+ * Dev Tauri does the same, then navigates to the Vite dev server.
+ */
+export function shouldSkipSvelteBootScreen(): boolean {
+  return isTauriShell();
+}
+
 /** @deprecated Use isTauriShell */
 export function isTauri(): boolean {
   return isTauriShell();

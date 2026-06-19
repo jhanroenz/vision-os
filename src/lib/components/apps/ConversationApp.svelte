@@ -14,7 +14,8 @@
     chat: 'Agent',
     ask: 'Ask',
     research: 'Research',
-    command: 'Command'
+    command: 'Command',
+    appBuilder: 'App Builder'
   };
 
   onMount(() => {

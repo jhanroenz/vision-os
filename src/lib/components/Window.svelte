@@ -5,6 +5,8 @@
   import { previewSnapRect, TASKBAR_HEIGHT, type SnapZone } from '$lib/stores/tileLayout';
   import { getAppById } from '$lib/apps/registry';
 
+  import UserAppHost from '$lib/components/apps/UserAppHost.svelte';
+
   interface Props {
     win: WindowState;
   }
@@ -15,6 +17,7 @@
 
   const app = $derived(getAppById(win.appId));
   const AppComponent = $derived(app?.component);
+  const isUserApp = $derived(app?.kind === 'user');
 
   const MIN_W = 280;
   const MIN_H = 180;
@@ -216,7 +219,9 @@
     </div>
   </div>
   <div class="window-content">
-    {#if AppComponent}
+    {#if isUserApp}
+      <UserAppHost windowId={win.id} userAppId={win.appId} {...(win.props ?? {})} />
+    {:else if AppComponent}
       <AppComponent windowId={win.id} {...(win.props ?? {})} />
     {/if}
   </div>

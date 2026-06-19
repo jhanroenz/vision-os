@@ -14,6 +14,22 @@ import {
 /** Memory / persona tools on light turns. */
 export const MEMORY_TOOLS = new Set(["remember", "learn_skill", "recall_brain"]);
 
+/** App Builder mode — user app scaffold/publish tools + workspace file tools under apps/. */
+export const APP_BUILDER_TOOLS = new Set([
+  "create_user_app",
+  "import_user_app",
+  "register_user_app",
+  "update_user_app_manifest",
+  "publish_user_app",
+  "list_user_apps",
+  "set_app_data",
+  "create_app_job",
+  "read_file",
+  "write_file",
+  "list_directory",
+  "recall_brain",
+]);
+
 /**
  * Read-only workspace + research tools — exposed in Ask/casual; Jarvis decides per turn.
  */
@@ -45,7 +61,7 @@ const activeTurnIntent = new Map();
 
 /**
  * @typedef {{
- *   profile: "chat" | "research" | "explore" | "code",
+ *   profile: "chat" | "research" | "explore" | "code" | "appBuilder",
  *   casualChat: boolean,
  *   askMode?: boolean,
  *   allowWebSearch: boolean,
@@ -110,6 +126,21 @@ export function buildAskComposerTurnIntent() {
   });
 }
 
+/** Fixed intent when Master Jan selects App Builder in the composer. */
+export function buildAppBuilderComposerTurnIntent() {
+  return buildTurnIntentFromSignals({
+    profile: "appBuilder",
+    casualChat: false,
+    allowWebSearch: false,
+    requireWebResearchFirst: false,
+    saveToMemory: false,
+    source: "composer-appBuilder",
+    reason: "App Builder mode — scaffold and publish user apps only",
+    actionSummary:
+      "Scaffold under workspace/apps/, implement, validate manifest, register_user_app before done",
+  });
+}
+
 export function webResearchRequiredForTurn(threadId, toolEvents, userMessage = "") {
   const intent = getTurnIntent(threadId);
   if (!intent?.requireWebResearchFirst) return false;
@@ -158,6 +189,7 @@ export const PROFILE_TOOL_SETS = {
     "inspect_ast",
     "read_file",
   ]),
+  appBuilder: APP_BUILDER_TOOLS,
 };
 
 export function isLiteProfile(intent) {

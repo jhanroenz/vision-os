@@ -1,0 +1,11 @@
+{
+  "id": "example-sandbox",
+  "name": "Example Sandbox",
+  "icon": "📦",
+  "type": "sandbox",
+  "entry": "index.html",
+  "defaultWidth": 480,
+  "defaultHeight": 360,
+  "launcher": true,
+  "permissions": ["storage", "agent:prompt"]
+}

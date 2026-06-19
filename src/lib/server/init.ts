@@ -63,6 +63,9 @@ export async function initVisionOS() {
 
   ensureSearxngOnStartup();
 
+  const { startJobRunner } = await import('./userApps/jobRunner.js');
+  startJobRunner();
+
   ready = true;
   console.log('[VisionOS] Backend initialized');
   console.log(`[VisionOS] Database: ${config.dbPath}`);

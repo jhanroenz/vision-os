@@ -387,6 +387,7 @@ export async function resolveLlmMessages(conversation, { promptProfile } = {}) {
     buildSystemPromptLite,
     buildSystemPromptAsk,
     buildSystemPromptResearch,
+    buildSystemPromptAppBuilder,
     buildSystemPromptExplore,
   } = await import("./prompt.js");
   const { listMemoriesForPrompt } = await import("./coreMemory.js");
@@ -475,6 +476,15 @@ export async function resolveLlmMessages(conversation, { promptProfile } = {}) {
     return conversation.llmMessages.map((m) =>
       m.role === "system" || m.content === "__SYSTEM__"
         ? { role: "system", content: research }
+        : m,
+    );
+  }
+
+  if (profile === "appBuilder") {
+    const appBuilder = buildSystemPromptAppBuilder(tools, promptCtx);
+    return conversation.llmMessages.map((m) =>
+      m.role === "system" || m.content === "__SYSTEM__"
+        ? { role: "system", content: appBuilder }
         : m,
     );
   }

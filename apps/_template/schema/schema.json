@@ -1,0 +1,29 @@
+{
+  "title": "Example Dashboard",
+  "blocks": [
+    {
+      "type": "markdown",
+      "text": "Declarative schema apps render native UI blocks without custom JS."
+    },
+    {
+      "type": "stat",
+      "label": "Visit count",
+      "key": "visits"
+    },
+    {
+      "type": "form",
+      "label": "Add note",
+      "key": "notes",
+      "action": "save_form",
+      "fields": [
+        { "name": "title", "label": "Title", "input": "text" },
+        { "name": "body", "label": "Body", "input": "textarea" }
+      ]
+    },
+    {
+      "type": "list",
+      "label": "Saved notes",
+      "key": "noteList"
+    }
+  ]
+}

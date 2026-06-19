@@ -11,7 +11,7 @@
 <div class="app-about">
   <div class="about-logo"><VisionOSLogo size={60} /></div>
   <h2>VisionOS</h2>
-  <p class="about-version">Version 0.1.0 · Preview</p>
+  <p class="about-version">Version 1.0.0</p>
   <p class="about-desc">
     A SvelteKit desktop shell for Jarvis — inspired by NovaOS, built for the next wave of agent modules.
   </p>

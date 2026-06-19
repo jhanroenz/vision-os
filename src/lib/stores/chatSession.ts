@@ -2,8 +2,14 @@ import { get, writable } from 'svelte/store';
 import { streamChat, type ChatEvent } from '$lib/api/chat';
 import { activateConversation, getConversation, type UiMessage } from '$lib/api/conversations';
 import { cancelShell } from '$lib/api/shell';
+import {
+  formatReasoningActivity,
+  formatToolCallActivity,
+  formatToolResultActivity,
+  truncateActivity,
+} from '$lib/utils/activityFormat';
 
-export type ComposerMode = 'chat' | 'ask' | 'command';
+export type ComposerMode = 'chat' | 'ask' | 'command' | 'appBuilder';
 
 export interface ActivityItem {
   id: string;
@@ -102,6 +108,39 @@ function pushActivity(session: SessionState, type: string, text: string, detail?
         detail
       }
     ]
+  };
+}
+
+function appendReasoningActivity(session: SessionState, chunk: string): SessionState {
+  if (!chunk) return session;
+  const log = [...session.activityLog];
+  const idx = log.findLastIndex((item) => item.type === 'reasoning');
+  const prevDetail = idx >= 0 ? (log[idx].detail ?? '') : '';
+  const full = `${prevDetail}${chunk}`;
+  const entry: ActivityItem = {
+    id: idx >= 0 ? log[idx].id : crypto.randomUUID(),
+    type: 'reasoning',
+    text: formatReasoningActivity(full),
+    detail: full,
+    at: idx >= 0 ? log[idx].at : Date.now(),
+    status: 'active'
+  };
+  if (idx >= 0) log[idx] = entry;
+  else log.push(entry);
+  return {
+    ...session,
+    activityLog: log,
+    activityPhase: truncateActivity(full, 80) || 'Thinking…',
+    currentAction: 'Thinking…'
+  };
+}
+
+function finalizeReasoningActivity(session: SessionState): SessionState {
+  return {
+    ...session,
+    activityLog: session.activityLog.map((item) =>
+      item.type === 'reasoning' && item.status === 'active' ? { ...item, status: 'done' } : item
+    )
   };
 }
 
@@ -233,9 +272,9 @@ export const chatSession = {
                 if (phaseMessage) next = setPhase(next, phaseMessage);
                 if (phaseMessage) next.currentAction = phaseMessage;
                 if (String(event.phase ?? '') === 'thinking') {
-                  next = pushActivity(next, 'status', 'Thinking...');
+                  next = pushActivity(next, 'status', 'Thinking…');
                 } else if (phaseMessage) {
-                  next = pushActivity(next, 'status', phaseMessage);
+                  next = pushActivity(next, 'status', truncateActivity(phaseMessage, 140));
                 }
               }
               if (event.type === 'turn_intent') {
@@ -248,20 +287,39 @@ export const chatSession = {
               }
               if (event.type === 'tool_call') {
                 const name = String(event.name ?? 'tool');
-                next = pushActivity(next, 'tool_call', `Tool: ${name}`, JSON.stringify(event.args ?? {}));
-                next.currentAction = `Running ${name}`;
+                const args = (event.args ?? {}) as Record<string, unknown>;
+                const summary = formatToolCallActivity(name, args);
+                next = pushActivity(next, 'tool_call', summary, JSON.stringify(args));
+                next.currentAction = summary;
               }
               if (event.type === 'tool_result') {
                 const name = String(event.name ?? 'tool');
-                next = pushActivity(next, 'tool_result', `Tool done: ${name}`);
-                next.currentAction = `Finished ${name}`;
+                const summary = formatToolResultActivity(
+                  name,
+                  event.content,
+                  (event.resultSummary ?? {}) as Record<string, unknown>
+                );
+                next = pushActivity(next, 'tool_result', summary, String(event.content ?? ''));
+                next.currentAction = summary;
+                if (name === 'publish_user_app' || name === 'import_user_app' || name === 'register_user_app') {
+                  void import('$lib/stores/userApps').then(({ loadUserApps }) => loadUserApps());
+                }
               }
-              if (event.type === 'reasoning_delta') {
-                next = setPhase(next, 'Thinking...');
+              if (event.type === 'user_app_published') {
+                void import('$lib/stores/userApps').then(({ loadUserApps }) => loadUserApps());
+              }
+              if (event.type === 'reasoning' || event.type === 'reasoning_delta') {
+                const chunk = String(event.content ?? event.text ?? '');
+                if (chunk) next = appendReasoningActivity(next, chunk);
+                else next = setPhase(next, 'Thinking…');
               }
               if (event.type === 'planning' || event.type === 'planning_delta') {
-                next = setPhase(next, 'Planning next steps...');
+                const chunk = String(event.content ?? event.text ?? '');
+                next = setPhase(next, 'Planning next steps…');
                 next.currentAction = 'Planning';
+                if (chunk) {
+                  next = pushActivity(next, 'planning', truncateActivity(chunk, 140) || 'Planning…', chunk);
+                }
               }
               if (event.type === 'task_plan') {
                 next = setTaskPlan(next, (event as { plan?: unknown }).plan);
@@ -289,6 +347,7 @@ export const chatSession = {
                 next = pushActivity(next, 'workspace', `Workspace: ${String(event.cwd ?? event.path ?? '.')}`);
               }
               if (event.type === 'message' && typeof event.content === 'string') {
+                next = finalizeReasoningActivity(next);
                 next.messages = [
                   ...next.messages,
                   {

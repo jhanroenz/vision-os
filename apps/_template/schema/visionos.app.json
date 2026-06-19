@@ -1,0 +1,10 @@
+{
+  "id": "example-schema",
+  "name": "Example Dashboard",
+  "icon": "📊",
+  "type": "schema",
+  "schema": "schema.json",
+  "defaultWidth": 520,
+  "defaultHeight": 420,
+  "permissions": ["storage"]
+}

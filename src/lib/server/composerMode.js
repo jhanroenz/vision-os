@@ -1,9 +1,13 @@
 /** Composer modes from the client dropdown. */
-export const COMPOSER_MODES = ["chat", "ask", "research", "command"];
+export const COMPOSER_MODES = ["chat", "ask", "research", "command", "appBuilder"];
 
 export function normalizeComposerMode(mode) {
-  const raw = String(mode ?? "chat").trim().toLowerCase();
-  return COMPOSER_MODES.includes(raw) ? raw : "chat";
+  const raw = String(mode ?? "chat").trim();
+  const lower = raw.toLowerCase();
+  if (lower === "appbuilder") return "appBuilder";
+  if (COMPOSER_MODES.includes(lower)) return lower;
+  if (COMPOSER_MODES.includes(raw)) return raw;
+  return "chat";
 }
 
 export function isAskComposerMode(mode) {
@@ -16,4 +20,8 @@ export function isResearchComposerMode(mode) {
 
 export function isCommandComposerMode(mode) {
   return normalizeComposerMode(mode) === "command";
+}
+
+export function isAppBuilderComposerMode(mode) {
+  return normalizeComposerMode(mode) === "appBuilder";
 }

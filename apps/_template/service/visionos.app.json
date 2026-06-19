@@ -1,0 +1,8 @@
+{
+  "id": "example-service",
+  "name": "Example Service",
+  "icon": "⚙",
+  "type": "service",
+  "launcher": false,
+  "permissions": ["jobs", "storage"]
+}

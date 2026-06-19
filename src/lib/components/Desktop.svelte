@@ -47,6 +47,7 @@
   }
 
   onMount(() => {
+    void import('$lib/stores/userApps').then(({ loadUserApps }) => loadUserApps());
     const onResize = () => windows.relayoutTiled();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);

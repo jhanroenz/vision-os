@@ -1,10 +1,10 @@
 mod backend;
 
 use backend::{
-    manage_backend, navigate_main_window, on_run_event, show_startup_error, show_startup_loading,
-    start_packaged_backend, StartupReporter, BACKEND_PORT,
+    manage_backend, navigate_main_window, on_run_event, schedule_dev_ui_navigation,
+    show_startup_error, show_startup_loading, start_packaged_backend, StartupReporter, BACKEND_PORT,
 };
-use tauri::{include_image, AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::{include_image, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 const WINDOW_ICON: tauri::image::Image<'static> = include_image!("icons/icon.png");
 
@@ -56,7 +56,17 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_title("VisionOS");
                 let _ = window.set_icon(WINDOW_ICON.clone());
-                show_dev_main_window(&window);
+
+                if cfg!(debug_assertions) {
+                    let handle = app.handle().clone();
+                    match show_startup_loading(&handle) {
+                        Ok(()) => schedule_dev_ui_navigation(&handle),
+                        Err(e) => {
+                            log::warn!("Dev boot splash failed ({e}); opening dev UI directly");
+                            show_dev_main_window(&window);
+                        }
+                    }
+                }
             }
 
             if !cfg!(debug_assertions) {
@@ -93,13 +103,6 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|app_handle, event| {
-            if cfg!(debug_assertions) {
-                if let RunEvent::Ready = event {
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        show_dev_main_window(&window);
-                    }
-                }
-            }
             on_run_event(app_handle, &event);
         });
 }

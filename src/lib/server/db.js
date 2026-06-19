@@ -129,6 +129,7 @@ export async function initDatabase() {
   migrateResearchSessionsTable();
   migrateCursorAgentIdColumn();
   migrateAppSettingsTable();
+  migrateUserAppsTables();
   await migrateJsonConversations();
   await migrateConversationCwdSanitize();
   return db;
@@ -274,6 +275,53 @@ function migrateBrainProjectColumn() {
       ON core_memories(enabled, project, importance DESC, updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_skills_project
       ON skills(enabled, project, updated_at DESC);
+  `);
+}
+
+function migrateUserAppsTables() {
+  getDb().exec(`
+    CREATE TABLE IF NOT EXISTS user_apps (
+      id TEXT PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '📦',
+      type TEXT NOT NULL,
+      status TEXT NOT NULL,
+      source TEXT NOT NULL,
+      manifest_json TEXT NOT NULL,
+      published_at INTEGER,
+      updated_at INTEGER NOT NULL,
+      default_width INTEGER,
+      default_height INTEGER,
+      launcher INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_apps_status
+      ON user_apps(status, updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS app_data (
+      app_id TEXT NOT NULL,
+      key TEXT NOT NULL,
+      value_json TEXT NOT NULL,
+      updated_at INTEGER NOT NULL,
+      PRIMARY KEY (app_id, key),
+      FOREIGN KEY (app_id) REFERENCES user_apps(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS app_jobs (
+      id TEXT PRIMARY KEY,
+      app_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      schedule TEXT NOT NULL,
+      handler TEXT NOT NULL,
+      payload_json TEXT,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      last_run_at INTEGER,
+      next_run_at INTEGER,
+      last_error TEXT,
+      FOREIGN KEY (app_id) REFERENCES user_apps(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_app_jobs_next
+      ON app_jobs(enabled, next_run_at);
   `);
 }
 

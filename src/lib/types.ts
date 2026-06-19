@@ -1,13 +1,36 @@
 import type { Component } from 'svelte';
 
+export type AppKind = 'builtin' | 'user';
+export type UserAppType = 'sandbox' | 'schema' | 'service';
+
 export interface AppDefinition {
   id: string;
+  kind?: AppKind;
   name: string;
   icon: string;
   launcher?: boolean;
   defaultWidth?: number;
   defaultHeight?: number;
-  component: Component;
+  component?: Component;
+  userType?: UserAppType;
+  status?: 'draft' | 'published';
+  slug?: string;
+}
+
+export interface UserAppRecord {
+  id: string;
+  slug: string;
+  name: string;
+  icon: string;
+  type: UserAppType;
+  status: 'draft' | 'published';
+  source: 'workspace' | 'published';
+  manifest: Record<string, unknown> | null;
+  publishedAt?: number | null;
+  updatedAt: number;
+  launcher?: boolean;
+  defaultWidth?: number;
+  defaultHeight?: number;
 }
 
 export interface WindowState {

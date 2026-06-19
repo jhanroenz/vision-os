@@ -1,6 +1,7 @@
 import { derived, get, writable } from 'svelte/store';
 import { loadJson, saveJson } from '$lib/persist';
 import { APPS } from '$lib/apps/registry';
+import { userAppsStore } from '$lib/stores/userApps';
 
 export type DesktopAppItem = { type: 'app'; appId: string };
 export type DesktopFileItem = { type: 'file'; path: string; name: string };
@@ -18,10 +19,15 @@ interface DesktopState {
 }
 
 function defaultItems(): DesktopItem[] {
-  return APPS.filter((a) => a.id !== 'welcome').map((a) => ({
+  const builtins = APPS.filter((a) => a.id !== 'welcome').map((a) => ({
     type: 'app' as const,
     appId: a.id
   }));
+  const userApps = userAppsStore.getPublishedDefinitions().map((a) => ({
+    type: 'app' as const,
+    appId: a.id
+  }));
+  return [...builtins, ...userApps];
 }
 
 function normalizeState(raw: unknown): DesktopState {
